@@ -49,7 +49,9 @@ m_LevelRA(0),
 m_LevelRB(0),
 m_LastGpioLeft(-1),
 m_LastGpioRight(-1),
-m_CamPos(50)
+m_CamPos(50),
+m_DistLeft(0),
+m_DistRight(0)
 {
 #ifdef MOTORS_CONTROL
 	gpioInitialise();
@@ -141,7 +143,9 @@ void CMotors::setLeftSpeed (int speed)
 		speed = 100;
 	else if (speed < -100)
 		speed = -100;
+	m_Lock.get();
 	m_LeftSpeed = speed;
+	m_Lock.release();
 }
 
 
@@ -151,7 +155,9 @@ void CMotors::setRightSpeed (int speed)
 		speed = 100;
 	else if (speed < -100)
 		speed = -100;
+	m_Lock.get();
 	m_RightSpeed = speed;
+	m_Lock.release();
 }
 
 void CMotors::ctrlLeftSpeed (int speed)
@@ -230,32 +236,85 @@ void CMotors::moveCam (int pos)
 #ifdef MOTORS_CONTROL
 	gpioServo(PWM_GPIO_CAM, servpos);
 #endif
+	m_Lock.get();
 	m_CamPos = pos;
+	m_Lock.release();
 }
 
 int CMotors::getLeftSpeed (void)
 {
-	//printf ("Left Motor count:%d\n", m_LeftCounter);
-	//m_LeftCounter = 0;
-	return m_LeftSpeed;
+	int ret;
+
+	m_Lock.get();
+	ret = m_LeftSpeed;
+	m_Lock.release();
+
+	return ret;
 }
 int CMotors::getRightSpeed (void)
 {
-	//printf ("Right Motor count:%d\n", m_RightCounter);
-	//m_RightCounter = 0;
-	return m_RightSpeed;
+	int ret;
+
+	m_Lock.get();
+	ret = m_RightSpeed;
+	m_Lock.release();
+
+	return ret;
 }
 
 int CMotors::getLeftMeas (void)
 {
-	//printf ("Left Motor count:%d\n", m_LeftCounter);
-	return m_MeasLeftSpeed;
+	int ret;
+
+	m_Lock.get();
+	ret = m_MeasLeftSpeed;
+	m_Lock.release();
+
+	return ret;
 }
 int CMotors::getRightMeas (void)
 {
-	//printf ("Right Motor count:%d\n", m_RightCounter);
-	return m_MeasRightSpeed;
+	int ret;
+
+	m_Lock.get();
+	ret = m_MeasRightSpeed;
+	m_Lock.release();
+
+	return ret;
 }
+
+int CMotors::getLeftDist (void)
+{
+	int ret;
+
+	m_Lock.get();
+	ret = m_DistLeft;
+	m_DistLeft = 0;
+	m_Lock.release();
+
+	return ret;
+}
+
+int CMotors::getRightDist (void)
+{
+	int ret;
+
+	m_Lock.get();
+	ret = m_DistRight;
+	m_DistRight = 0;
+	m_Lock.release();
+
+	return ret;
+}
+
+void CMotors::resetDist (void)
+{
+	m_Lock.get();
+	m_DistLeft = 0;
+	m_DistRight = 0;
+	m_Lock.release();
+}
+
 
 void CMotors::EncoderCbLeft (int gpio, int level, unsigned int tick)
 {
@@ -336,7 +395,9 @@ void CMotors::run (void *)
 	while (1)
 	{
 		sampler.wait();
-
+		m_Lock.get();
+		m_DistLeft += m_LeftCounter;
+		m_DistRight += m_RightCounter;
 		m_MeasLeftSpeed = m_LeftCounter;
 		m_MeasRightSpeed = m_RightCounter;
 		lefterr += (m_LeftSpeed  - (m_MeasLeftSpeed*10)) / MOTOR_FEEDBACK_GAIN;
@@ -345,6 +406,7 @@ void CMotors::run (void *)
 		ctrlRightSpeed(m_RightSpeed);
 		m_LeftCounter = 0;
 		m_RightCounter = 0;
+		m_Lock.release();
 		//printf ("Motor speed %d/%d\n", m_MeasLeftSpeed,m_MeasRightSpeed);
 
 	}

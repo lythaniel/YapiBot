@@ -40,8 +40,9 @@ int CRangeFinder::getRange(void)
 	{
 		m_I2Cbus->read(ADC_I2C_ADD, buff, 3);
 		readout = (buff[0] << 8) + (buff[1]);
-		//printf ("Rangefinder readout: %d, confreg 0x%x\n",range,buff[2]);
-		range = 375000 / ((float)readout - 500);
+		//printf ("Rangefinder readout: %d, confreg 0x%x\n",readout,buff[2]);
+		//range = 375000 / ((float)readout - 500);
+		range = readout;
 	}
 	return range;
 }

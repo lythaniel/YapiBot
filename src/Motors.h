@@ -5,6 +5,7 @@
 #include "Singleton.h"
 #include "Thread.h"
 #include "Sampler.h"
+#include "Mutex.h"
 
 
 class CMotors : public CSingleton<CMotors>
@@ -22,6 +23,11 @@ public:
 	int getRightSpeed (void);
 	int getLeftMeas (void);
 	int getRightMeas (void);
+	int getLeftDist (void);
+	int getRightDist (void);
+
+	void resetDist (void);
+
 	int getCamPos (void) {return m_CamPos;}
 
 	void EncoderCbLeft (int gpio, int level, unsigned int tick);
@@ -46,6 +52,10 @@ private:
 	int m_LevelRB;
 	int m_LastGpioLeft;
 	int m_LastGpioRight;
+	int m_DistLeft;
+	int m_DistRight;
+
+	CMutex m_Lock;
 
 	CThread * m_Thread;
 
