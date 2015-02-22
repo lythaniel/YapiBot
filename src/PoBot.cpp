@@ -12,6 +12,7 @@
 #include "I2Cbus.h"
 #include "Compass.h"
 #include "RangeFinder.h"
+#include "EventObserver.h"
 
 
 #define MAIN_TEXTURE_WIDTH 640
@@ -23,8 +24,10 @@
 //entry point
 int main(int argc, const char **argv)
 {
+	//Create Event Observer
+	CEventObserver::getInstance();
 
-	//First, create the network.
+	//Create the network.
 	CNetwork::getInstance()->start();
 
 	//Create the video processing.

@@ -25,6 +25,7 @@ m_ReqLeftMov(0),
 m_ReqRightMov(0)
 {
 	CNetwork::getInstance()->regCmdReceived(this,&CController::CmdPckReceived);
+	CEventObserver::getInstance()->registerOnEvent(EVENT_MASK_ALL,this,&CController::EventCallback);
 	m_Thread = new CThread ();
 	m_Thread->regThreadProcess(this, &CController::run);
 	m_Thread->start();
@@ -118,7 +119,7 @@ void CController::runCompassCalibration (PoBotStatus_t status)
 			m_State = CTRL_STATE_IDLE;
 			CMotors::getInstance()->move (0,0);
 			fprintf(stdout,"Compass calibration complete\n");
-			//Broadcast success.
+			CEventObserver::getInstance()->notify(CtrlMoveComplete);
 		}
 		else
 		{
@@ -143,10 +144,11 @@ void CController::runRotate (PoBotStatus_t status)
 	m_DistMovedRight += CMotors::getInstance()->getRightDist();
 	if ((abs(m_DistMovedLeft) > abs(m_ReqLeftMov))&&(abs(m_DistMovedRight) > abs(m_ReqRightMov)))
 	{
-		fprintf(stdout,"Rotation complete\n");
 		CMotors::getInstance()->move (0,0);
 		m_ReqLeftMov = 0;
 		m_ReqRightMov = 0;
+		fprintf(stdout,"Rotation complete\n");
+		CEventObserver::getInstance()->notify(CtrlMoveComplete);
 	}
 	else
 	{
@@ -168,22 +170,22 @@ void CController::runMoveStraight (PoBotStatus_t status)
 		m_DistMovedRight += CMotors::getInstance()->getRightDist();
 		if (status.range > 32000)
 		{
-			fprintf(stdout,"Move cancel due obstacle(req = %d left = %d right = %d)\n",m_ReqLeftMov,m_DistMovedLeft,m_DistMovedRight);
-			//Broadcast move cancel.
 			m_ReqLeftMov = 0;
 			m_ReqRightMov = 0;
 			m_State = CTRL_STATE_IDLE;
 			CMotors::getInstance()->move (0,0);
+			fprintf(stdout,"Move cancel due obstacle(req = %d left = %d right = %d)\n",m_ReqLeftMov,m_DistMovedLeft,m_DistMovedRight);
+			CEventObserver::getInstance()->notify(CtrlMoveObstacle);
 
 		}
 		else if ((abs(m_DistMovedLeft) > abs(m_ReqLeftMov))&&(abs(m_DistMovedRight) > abs(m_ReqRightMov)))
 		{
-			fprintf(stdout,"Move complete (req = %d left = %d right = %d)\n",m_ReqLeftMov,m_DistMovedLeft,m_DistMovedRight);
-			//Broadcast move complete.
 			m_ReqLeftMov = 0;
 			m_ReqRightMov = 0;
 			m_State = CTRL_STATE_IDLE;
 			CMotors::getInstance()->move (0,0);
+			fprintf(stdout,"Move complete (req = %d left = %d right = %d)\n",m_ReqLeftMov,m_DistMovedLeft,m_DistMovedRight);
+			CEventObserver::getInstance()->notify(CtrlMoveComplete);
 		}
 		else
 		{
@@ -217,7 +219,7 @@ void CController::runAlignBearing (PoBotStatus_t status)
 			m_State = CTRL_STATE_IDLE;
 			CMotors::getInstance()->move (0,0);
 			fprintf(stdout,"Bearing aligned !\n");
-			//Broadcast success.
+			CEventObserver::getInstance()->notify(CtrlMoveComplete);
 		}
 		else
 		{
@@ -237,22 +239,22 @@ void CController::runMoveBearing (PoBotStatus_t status)
 	m_DistMovedRight += CMotors::getInstance()->getRightDist();
 	if (status.range > 32000)
 	{
-		fprintf(stdout,"Move cancel due obstacle(req = %d left = %d right = %d)\n",m_ReqLeftMov,m_DistMovedLeft,m_DistMovedRight);
-		//Broadcast move cancel.
 		m_ReqLeftMov = 0;
 		m_ReqRightMov = 0;
 		m_State = CTRL_STATE_IDLE;
 		CMotors::getInstance()->move (0,0);
-
+		fprintf(stdout,"Move cancel due obstacle(req = %d left = %d right = %d)\n",m_ReqLeftMov,m_DistMovedLeft,m_DistMovedRight);
+		CEventObserver::getInstance()->notify(CtrlMoveObstacle);
 	}
 	else if ((abs(m_DistMovedLeft) > abs(m_ReqLeftMov))&&(abs(m_DistMovedRight) > abs(m_ReqRightMov)))
 	{
-		fprintf(stdout,"Move complete (req = %d left = %d right = %d)\n",m_ReqLeftMov,m_DistMovedLeft,m_DistMovedRight);
-		//Broadcast move complete.
 		m_ReqLeftMov = 0;
 		m_ReqRightMov = 0;
 		m_State = CTRL_STATE_IDLE;
 		CMotors::getInstance()->move (0,0);
+		fprintf(stdout,"Move complete (req = %d left = %d right = %d)\n",m_ReqLeftMov,m_DistMovedLeft,m_DistMovedRight);
+		CEventObserver::getInstance()->notify(CtrlMoveComplete);
+
 	}
 	else
 	{
@@ -281,7 +283,7 @@ void CController::compassCalibration (void)
 	m_Lock.get();
 	if (m_State != CTRL_STATE_IDLE)
 	{
-		//Broadcast event state cancel.
+		CEventObserver::getInstance()->notify(CtrlMoveCancel);
 		CMotors::getInstance()->move (0,0);
 	}
 
@@ -304,7 +306,7 @@ void CController::moveStraight (int distance)
 	m_Lock.get();
 	if (m_State != CTRL_STATE_IDLE)
 	{
-		//Broadcast event state cancel.
+		CEventObserver::getInstance()->notify(CtrlMoveCancel);
 		CMotors::getInstance()->move (0,0);
 	}
 
@@ -327,7 +329,7 @@ void CController::alignBearing (int bearing)
 	m_Lock.get();
 	if (m_State != CTRL_STATE_IDLE)
 	{
-		//Broadcast event state cancel.
+		CEventObserver::getInstance()->notify(CtrlMoveCancel);
 		CMotors::getInstance()->move (0,0);
 	}
 
@@ -345,7 +347,7 @@ void CController::moveBearing (int bearing, int distance)
 	m_Lock.get();
 	if (m_State != CTRL_STATE_IDLE)
 	{
-		//Broadcast event state cancel.
+		CEventObserver::getInstance()->notify(CtrlMoveCancel);
 		CMotors::getInstance()->move (0,0);
 	}
 
@@ -368,7 +370,7 @@ void CController::rotate (int rot)
 	m_Lock.get();
 	if (m_State != CTRL_STATE_IDLE)
 	{
-		//Broadcast event state cancel.
+		CEventObserver::getInstance()->notify(CtrlMoveCancel);
 		CMotors::getInstance()->move (0,0);
 	}
 
@@ -417,7 +419,7 @@ void CController::processCmdMove (PoBotCmd_t cmd, char * buffer, unsigned int si
 	m_Lock.get();
 	if (m_State != CTRL_STATE_IDLE)
 	{
-		//Broadcast event state cancel.
+		CEventObserver::getInstance()->notify(CtrlMoveCancel);
 		m_State = CTRL_STATE_IDLE;
 		CMotors::getInstance()->move (0,0);
 	}
@@ -489,7 +491,7 @@ void CController::processCmd (PoBotCmd_t cmd, char * buffer, unsigned int size)
 	m_Lock.get();
 	if (m_State != CTRL_STATE_IDLE)
 	{
-		//Broadcast event state cancel.
+		CEventObserver::getInstance()->notify(CtrlMoveCancel);
 		m_State = CTRL_STATE_IDLE;
 		CMotors::getInstance()->move (0,0);
 	}
@@ -524,6 +526,11 @@ void CController::processCmd (PoBotCmd_t cmd, char * buffer, unsigned int size)
 		fprintf(stderr,"Unknown command received !!!\n");
 		break;
 	}
+}
+
+void CController::EventCallback (Event_t evt, int data1, void * data2)
+{
+	fprintf(stdout,"Event received: %x, data1 = %d, data2 = %d\n",evt,data1,data2);
 }
 
 

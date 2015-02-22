@@ -11,6 +11,7 @@
 #include "Singleton.h"
 #include "Thread.h"
 #include "Mutex.h"
+#include "EventObserver.h"
 
 #define CMD_TYPE_MASK 0xF000
 #define CMD_TYPE_MOVE 0x1000
@@ -44,11 +45,6 @@ typedef struct {
 
 } PoBotStatus_t;
 
-typedef enum {
-	CTRL_EVENT_CANCEL,
-	CTRL_EVENT_DONE,
-	CTRL_EVENT_OBSTACLE
-} ctrlEvent_t;
 
 
 class CController: public CSingleton <CController> {
@@ -76,6 +72,8 @@ public:
 	void alignBearing (int bearing);
 	void moveBearing (int bearing, int distance);
 	void rotate (int rot);
+
+	void EventCallback (Event_t evt, int data1, void * data2);
 
 private:
 

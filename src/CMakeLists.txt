@@ -42,6 +42,7 @@ add_executable(
 	I2Cbus.cpp
 	Sampler.cpp
 	RangeFinder.cpp
+	EventObserver.cpp
 )
 
 target_link_libraries(

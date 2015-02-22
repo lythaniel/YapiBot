@@ -11,6 +11,7 @@
 #include "Thread.h"
 #include "Mutex.h"
 #include "Semaphore.h"
+#include "EventObserver.h"
 
 
 #define MAXPENDING 1    /* Max connection requests */
@@ -24,7 +25,6 @@ m_VideoServerSock(-1),
 m_VideoClientSock(-1),
 m_CmdServerSock(-1),
 m_CmdClientSock(-1),
-m_pEventCb(NULL),
 m_pRxCb (NULL),
 m_VideoClientConnected(false),
 m_CmdClientConnected(false),
@@ -70,7 +70,7 @@ void CNetwork::sendCmdPck (unsigned char * buffer, unsigned int size)
 					m_CmdClientSock = -1;
 					m_CmdClientConnected = false;
 					m_pCmdClientDisconnected->post();
-					m_pEventCb->trigger(CmdClientDisconnected);
+					CEventObserver::getInstance()->notify(NetCmdClientDisconnected);
 					fprintf(stdout,"Command client disconnected\n");
 				}
 			}
@@ -90,9 +90,7 @@ void CNetwork::sendVideoPacket (unsigned char * buffer, unsigned int size)
 				m_VideoClientSock = -1;
 				m_VideoClientConnected = false;
 				m_pVideoClientDisconnected->post();
-				if (m_pEventCb != NULL) {
-					m_pEventCb->trigger(VideoClientDisconnected);
-				}
+				CEventObserver::getInstance()->notify(NetVideoClientDisconnected);
 				fprintf(stdout,"Video client disconnected\n");
 			}
 		}
@@ -121,10 +119,8 @@ void CNetwork::VideoServerThread (void *)
 	if (listen(m_VideoServerSock, MAXPENDING) < 0) {
 		fprintf(stdout,"Failed to listen on server socket\n");
 	}
-	if (m_pEventCb != NULL)
-	{
-		m_pEventCb->trigger(VideoServerReady);
-	}
+	CEventObserver::getInstance()->notify(NetVideoServerReady);
+
     /* Run until cancelled */
 	while (1) {
 		unsigned int clientlen = sizeof(clientaddr);
@@ -139,10 +135,7 @@ void CNetwork::VideoServerThread (void *)
 			fprintf(stdout, "Video client connected: %s\n", inet_ntoa(clientaddr.sin_addr));
 			m_VideoClientConnected = true;
 			m_pVideoSockMutex->release();
-			if (m_pEventCb != NULL)
-			{
-				m_pEventCb->trigger(VideoClientConnected);
-			}
+			CEventObserver::getInstance()->notify(NetVideoClientConnected);
 			m_pVideoClientDisconnected->wait();
 		}
 		
@@ -173,10 +166,8 @@ void CNetwork::CmdServerThread (void *)
 	if (listen(m_CmdServerSock, MAXPENDING) < 0) {
 		fprintf(stdout,"Failed to listen on server socket\n");
 	}
-	if (m_pEventCb != NULL)
-	{
-		m_pEventCb->trigger(VideoServerReady);
-	}
+	CEventObserver::getInstance()->notify(NetCmdServerReady);
+
     /* Run until cancelled */
 	while (1) {
 		unsigned int clientlen = sizeof(clientaddr);
@@ -200,10 +191,7 @@ void CNetwork::CmdServerThread (void *)
 			m_pRxCmdThread->start();
 
 			m_pCmdSockMutex->release();
-			if (m_pEventCb != NULL)
-			{
-				m_pEventCb->trigger(CmdClientConnected);
-			}
+			CEventObserver::getInstance()->notify(NetCmdClientConnected);
 			m_pCmdClientDisconnected->wait();
 		}
 	}
@@ -225,9 +213,7 @@ void CNetwork::RxCmdThread (void *)
 					m_CmdClientSock = -1;
 					m_CmdClientConnected = false;
 					m_pCmdClientDisconnected->post();
-					if (m_pEventCb != NULL) {
-						m_pEventCb->trigger(CmdClientDisconnected);
-					}
+					CEventObserver::getInstance()->notify(NetCmdClientDisconnected);
 					fprintf(stdout,"Command client disconnected\n");
 				}
 				else {

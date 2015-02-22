@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include "Network.h"
+#include "EventObserver.h"
 
 class CEncoder;
 
@@ -21,7 +22,7 @@ public:
 	void streamFrame (uint8_t * frame, uint32_t size);
 
 	void cb (uint8_t * buff, uint32_t size );
-	void Networkcb (CNetwork::NetEvent evt);
+	void Networkcb (Event_t evt, int data1, void * data2);
 
 private:
 	CEncoder * m_pEncoder;

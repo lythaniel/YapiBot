@@ -8,6 +8,7 @@
 #include "VideoStreamer.h"
 #include "Network.h"
 #include "Encoder.h"
+#include "EventObserver.h"
 
 CVideoStreamer::CVideoStreamer(uint32_t width, uint32_t height,uint32_t framerate) :
 m_pEncoder (NULL),
@@ -17,9 +18,8 @@ m_Framerate (framerate)
 {
 	m_pEncoder= new CEncoder(m_Width, m_Height,m_Framerate);
 	m_pEncoder->regFrameEncodedCb(this,&CVideoStreamer::cb);
-	CNetwork::getInstance()->regNetworkEvent(this,&CVideoStreamer::Networkcb);
-
-}
+	CEventObserver::getInstance()->registerOnEvent(EVENT_MASK_NETWORK,this, &CVideoStreamer::Networkcb);
+	}
 
 CVideoStreamer::~CVideoStreamer() {
 	if (m_pEncoder != NULL)
@@ -35,9 +35,9 @@ void CVideoStreamer::cb (uint8_t * buff, uint32_t size )
 
 
 
-void CVideoStreamer::Networkcb (CNetwork::NetEvent evt)
+void CVideoStreamer::Networkcb (Event_t evt, int data1, void * data2)
 {
-	if ((evt == CNetwork::VideoClientConnected))
+	if ((evt == NetVideoClientConnected))
 	{
 		uint8_t * spsbuff;
 		uint32_t spssize;

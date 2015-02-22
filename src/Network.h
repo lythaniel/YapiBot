@@ -18,16 +18,8 @@ public:
 	CNetwork();
 	~CNetwork();
 
-	typedef enum NetEvent {
-		VideoServerReady,
-		VideoClientConnected,
-		VideoClientDisconnected,
-		CmdServerReady,
-		CmdClientConnected,
-		CmdClientDisconnected
-	} NetEvent_t;
 
-	DECLARE_REG_FUNCTION_CB_1(regNetworkEvent, m_pEventCb)
+
 	DECLARE_REG_FUNCTION_CB_2(regCmdReceived, m_pRxCb)
 
 
@@ -46,7 +38,6 @@ public:
 	bool isVideoConnected (void) {return m_VideoClientConnected;}
 
 private:
-	Callback1base<NetEvent> * m_pEventCb;
 	Callback2base<char *, unsigned int> *  m_pRxCb;
 	CThread * m_pVideoServerThread;
 	CMutex * m_pVideoSockMutex;
