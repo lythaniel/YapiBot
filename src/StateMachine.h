@@ -8,34 +8,93 @@
 #ifndef STATEMACHINE_H_
 #define STATEMACHINE_H_
 
-typedef enum {
-	StmEvt_None,
-}StmEvent;
+#include "Event.h"
+#include <queue>
+#include <map>
+#include "Mutex.h"
+#include "Thread.h"
+#include "Semaphore.h"
+
+#define STM_NOSTATE -1
+
+typedef int StateId_t;
+typedef struct {
+	Event_t evt;
+	int data1;
+	void * data2;
+} StmEvent_t;
+
+class CTransition;
 
 class CState {
 public:
-	virtual CState() = 0;
+	CState(StateId_t id, const char * StateName);
 	virtual ~CState();
-	virtual void onEnter(void);
-	virtual void run(void) = 0;
-	virtual void onExit(void);
+	virtual void onEnter(void) = 0;
+	virtual CTransition * onEvent (Event_t evt, int data1, void * data2);
+	virtual void onExit(void) {}
 
+	virtual void addTransition (CTransition * trans);
+
+	virtual const char * getName (void) {return m_Name;}
+	virtual StateId_t getId (void) {return m_Id;}
+
+private:
+	typedef std::vector<CTransition *> TransVect_t;
+	TransVect_t m_TransList;
+	const char * m_Name;
+	StateId_t m_Id;
+	StmEvent_t m_TransEvent;
 };
 
 class CTransition {
 public:
-	CTransition(CState * from,CState * to, StmEvent event);
+	CTransition(StateId_t to, Event_t event) : m_To(to), m_Event(event) {}
 	~CTransition();
+	Event_t getEvent (void) {return m_Event;}
+	StateId_t getNextState (void) {return m_To;}
 private:
-	CState * m_From;
-	CState * m_To;
-	StmEvent m_Event;
+	StateId_t m_To;
+	Event_t m_Event;
 };
+
 
 class CStateMachine {
 public:
 	CStateMachine();
 	~CStateMachine();
+
+	void start(void);
+	void stop (void);
+	void pause (void);
+
+	void addState (StateId_t id, CState * state, bool initstate = false);
+	void addTransition (StateId_t id,  CTransition * trans);
+	StateId_t getCurrentState (void);
+	const char * getStateName (StateId_t id);
+
+	void rcvEvent (Event_t evt, int data1, void * data2);
+
+	void run (void *);
+
+
+private:
+	typedef std::map <StateId_t, CState *> StateMap_t;
+	StateMap_t m_StateMap;
+
+	typedef std::queue<StmEvent_t *> EventQueue_t;
+	EventQueue_t m_EventQueue;
+
+	StateId_t m_CurrentState;
+	StateId_t m_InitState;
+
+	bool	m_Running;
+
+	CMutex m_Lock;
+	CMutex m_EventQueueLock;
+	CThread * m_Thread;
+	CSemaphore m_SemEvtRec;
+
 };
 
 #endif /* STATEMACHINE_H_ */

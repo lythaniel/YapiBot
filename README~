@@ -19,5 +19,5 @@ cmake -DCMAKE_BUILD_TYPE=Debug ../src
 
 
 crosscompile + debug + eclipse:
-cmake -DCMAKE_TOOLCHAIN_FILE=~/rpi/Toolchain-RaspberryPi2.cmake -G"Eclipse CDT4 - Unix Makefiles" -D_ECLIPSE_VERSION=4.4 -DCMAKE_BUILD_TYPE=Debug ../src
+cmake -DCMAKE_TOOLCHAIN_FILE=~/rpi/Toolchain-RaspberryPi.cmake -G"Eclipse CDT4 - Unix Makefiles" -D_ECLIPSE_VERSION=4.4 -DCMAKE_BUILD_TYPE=Debug ../src
 

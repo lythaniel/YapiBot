@@ -3,20 +3,20 @@
 #include "Motors.h"
 
 #define PWM_GPIO_R_PWM 23
-#define PWM_GPIO_R_FW 25
-#define	PWM_GPIO_R_RE 24
+#define PWM_GPIO_R_FW 24
+#define	PWM_GPIO_R_RE 25
 
 #define PWM_GPIO_L_PWM 14
-#define PWM_GPIO_L_FW 15
-#define	PWM_GPIO_L_RE 18
+#define PWM_GPIO_L_FW 18
+#define	PWM_GPIO_L_RE 15
 
 #define	PWM_GPIO_CAM 8
 
-#define ROTENC_GPIO_LA 11
-#define ROTENC_GPIO_LB 10
+#define ROTENC_GPIO_LA 10
+#define ROTENC_GPIO_LB 9
 
-#define ROTENC_GPIO_RA 9
-#define ROTENC_GPIO_RB 7
+#define ROTENC_GPIO_RA 7
+#define ROTENC_GPIO_RB 11
 
 #define MOTORS_CONTROL
 

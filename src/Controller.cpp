@@ -16,6 +16,10 @@
 
 #define CONTROLLER_PERIOD 500
 
+#define BEARING_ERR_GAIN 10
+#define BEARING_ERR_LIM 2
+#define BEARING_ERR_CLIP 200
+
 CController::CController() :
 m_State(CTRL_STATE_IDLE),
 m_DistMovedLeft(0),
@@ -114,7 +118,7 @@ void CController::runCompassCalibration (PoBotStatus_t status)
 
 	    fprintf(stdout,"Aligning to north current = %d error = %d\n",status.heading, err);
 
-		if (abs(err) < 10)
+		if (abs(err) < BEARING_ERR_LIM)
 		{
 			m_State = CTRL_STATE_IDLE;
 			CMotors::getInstance()->move (0,0);
@@ -123,11 +127,11 @@ void CController::runCompassCalibration (PoBotStatus_t status)
 		}
 		else
 		{
-			err = err * 5;
-			if (err > 100)
-				err = 100;
-			else if (err < -100)
-				err = -100;
+			err = err * BEARING_ERR_GAIN;
+			if (err > BEARING_ERR_CLIP)
+				err = BEARING_ERR_CLIP;
+			else if (err < -BEARING_ERR_CLIP)
+				err = -BEARING_ERR_CLIP;
 
 			CMotors::getInstance()->move (0,err);
 		}
@@ -214,7 +218,7 @@ void CController::runAlignBearing (PoBotStatus_t status)
 
 		fprintf(stdout,"Aligning to %d current = %d\n", m_RequestedBearing, err);
 
-		if (abs(err) < 10)
+		if (abs(err) < BEARING_ERR_LIM)
 		{
 			m_State = CTRL_STATE_IDLE;
 			CMotors::getInstance()->move (0,0);
@@ -223,11 +227,11 @@ void CController::runAlignBearing (PoBotStatus_t status)
 		}
 		else
 		{
-			err = err * 5;
-			if (err > 100)
-				err = 100;
-			else if (err < -100)
-				err = -100;
+			err = err * BEARING_ERR_GAIN;
+			if (err > BEARING_ERR_CLIP)
+				err = BEARING_ERR_CLIP;
+			else if (err < -BEARING_ERR_CLIP)
+				err = -BEARING_ERR_CLIP;
 
 			CMotors::getInstance()->move (0,err);
 		}
@@ -267,13 +271,13 @@ void CController::runMoveBearing (PoBotStatus_t status)
 		{
 			err += 360;
 		}
-		err = err * 5;
+		err = err * BEARING_ERR_GAIN;
 		int dir = 100;
 		if (m_ReqLeftMov < 0) dir = -100;
 
 		fprintf(stdout,"Moving (dist = %d, bearing = %d) distLeft = %d,  distRight = %d, error = %d\n",m_ReqLeftMov,m_RequestedBearing, m_DistMovedLeft,m_DistMovedRight,err);
-		if (err > 100) err = 100;
-		else if (err < -100) err = -100;
+		if (err > BEARING_ERR_CLIP) err = BEARING_ERR_CLIP;
+		else if (err < -BEARING_ERR_CLIP) err = -BEARING_ERR_CLIP;
 		CMotors::getInstance()->move (dir,err);
 	}
 }
@@ -291,8 +295,8 @@ void CController::compassCalibration (void)
 	m_DistMovedRight = 0;
 
 	m_RequestedBearing = 0;
-	m_ReqLeftMov = -1000;
-	m_ReqRightMov = 1000;
+	m_ReqLeftMov = -10000;
+	m_ReqRightMov = 10000;
 
 	CMotors::getInstance()->resetDist();
 

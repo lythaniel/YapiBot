@@ -85,8 +85,8 @@ float CCompass::getHeading (void)
 			sx = ((buffer[0])<< 8) + buffer[1] ;
 			sy = ((buffer[4])<< 8) + buffer[5];
 			sz = (buffer[2]<< 8) + buffer[3];
-			fx = sx * ScaleTable[m_Scale];
-			fy = - sy * ScaleTable[m_Scale];
+			fx = -sx * ScaleTable[m_Scale];
+			fy = sy * ScaleTable[m_Scale];
 			fz = sz * ScaleTable[m_Scale];
 
 			m_MaxX = max (m_MaxX,fx);
@@ -104,7 +104,7 @@ float CCompass::getHeading (void)
 			fx += m_AvgX;
 			fy += m_AvgY;
 
-			heading = atan2(fy,fx);
+			heading = atan2(fx,fy);
 			if (heading < 0) heading += 2 * PI;
 			if (heading > 2 * PI) heading -= 2 * PI;
 			heading *= RAD_TO_DEG;

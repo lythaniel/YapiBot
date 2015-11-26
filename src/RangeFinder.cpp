@@ -7,7 +7,7 @@
 
 #include "RangeFinder.h"
 
-#define ADC_I2C_ADD 0x6a
+#define ADC_I2C_ADD 0x68
 
 CRangeFinder::CRangeFinder() :
 m_I2Cbus (NULL)
@@ -22,7 +22,7 @@ CRangeFinder::~CRangeFinder()
 
 void CRangeFinder::setI2Cbus (CI2Cbus * bus)
 {
-	char confreg = (0x00 << 5) | (1 << 4) | (0x2 << 2) | (0x00); //Channel 1 / Continuous mode / 15 SPS(16bits) / x1
+	char confreg = (0x01 << 5) | (1 << 4) | (0x2 << 2) | (0x00); //Channel 2 / Continuous mode / 15 SPS(16bits) / x1
 	if (bus != NULL)
 	{
 		m_I2Cbus = bus;
@@ -41,8 +41,8 @@ int CRangeFinder::getRange(void)
 		m_I2Cbus->read(ADC_I2C_ADD, buff, 3);
 		readout = (buff[0] << 8) + (buff[1]);
 		//printf ("Rangefinder readout: %d, confreg 0x%x\n",readout,buff[2]);
-		//range = 375000 / ((float)readout - 500);
-		range = readout;
+		range = (490512 / (readout - 508)) - 4;
+		//range = readout;
 	}
 	return range;
 }

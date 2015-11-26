@@ -98,7 +98,6 @@ rt
 	${M_LIBS}
 	${LD_LIBS}
 	${PCRE_LIBS}
-	${STD_LIBS}
 	libmmal_core.so
 	libmmal_util.so
 	libmmal_vc_client.so
