@@ -20,9 +20,15 @@
 
 #define MOTORS_CONTROL
 
-#define MOTOR_PERIOD 100
+#define MOTOR_PERIOD 10
 
-#define MOTOR_FEEDBACK_GAIN 1
+
+#define MOTOR_FEEDBACK_GAIN_DIV 2
+#define MOTOR_FEEDBACK_GAIN_MUL 4
+
+//#define MOTOR_FEEDBACK_GAIN_DIV
+
+//const float gMotorCurve [11] = {
 
 static void GpioCbL (int gpio, int level, unsigned int tick, void * user)
 {
@@ -62,6 +68,9 @@ m_DistRight(0)
 	gpioSetMode (PWM_GPIO_L_PWM,PI_OUTPUT);
 	gpioSetMode (PWM_GPIO_L_FW,PI_OUTPUT);
 	gpioSetMode (PWM_GPIO_L_RE,PI_OUTPUT);
+
+	gpioSetPWMfrequency(PWM_GPIO_R_PWM, 100);
+	gpioSetPWMfrequency(PWM_GPIO_L_PWM, 100);
 
 	gpioSetPWMrange (PWM_GPIO_R_PWM,100);
 	gpioSetPWMrange (PWM_GPIO_L_PWM,100);
@@ -187,7 +196,9 @@ void CMotors::ctrlLeftSpeed (int speed)
 		}
 		speed = abs(speed);
 		if (speed > 100)
+		{
 				speed = 100;
+		}
 		gpioPWM (PWM_GPIO_L_PWM,speed);
 	}
 #endif
@@ -219,7 +230,9 @@ void CMotors::ctrlRightSpeed (int speed)
 		}
 		speed = abs(speed);
 		if (speed > 100)
+		{
 				speed = 100;
+		}
 		gpioPWM (PWM_GPIO_R_PWM,speed);
 	}
 #endif
@@ -387,27 +400,80 @@ void CMotors::EncoderCbRight(int gpio, int level, unsigned int tick)
 
 }
 
+#define SPEED_CONV  1.5
+#define SPEED_ERROR_GAIN  1.5
+#define ACC_ERROR_GAIN 0.8
+
+#define SPEED_MOV_AVG 5
 void CMotors::run (void *)
 {
 	CSampler sampler (MOTOR_PERIOD);
-	int lefterr = 0;
-	int righterr = 0;
+	float fSpeedErrL = 0;
+	float fSpeedErrR = 0;
+
+	float fPrevComdL = 0;
+	float fPrevComdR = 0;
+
+	int iPrevSpeedL = 0;
+	int iPrevSpeedR = 0;
+
+	float fAccConsL = 0;
+	float fAccConsR = 0;
+
+	float fAccL = 0;
+	float fAccR = 0;
+
+	float fAccErrL = 0;
+	float fAccErrR = 0;
+	int MeasSpeedL [SPEED_MOV_AVG] = {0};
+	int MeasSpeedR [SPEED_MOV_AVG] = {0};
+	int MeasSpeedidx = 0;
+
 	while (1)
 	{
 		sampler.wait();
 		m_Lock.get();
 		m_DistLeft += m_LeftCounter;
 		m_DistRight += m_RightCounter;
-		m_MeasLeftSpeed = m_LeftCounter;
-		m_MeasRightSpeed = m_RightCounter;
-		lefterr += (m_LeftSpeed  - (m_MeasLeftSpeed*10)) / MOTOR_FEEDBACK_GAIN;
-		righterr += (m_RightSpeed - (m_MeasRightSpeed*10)) /MOTOR_FEEDBACK_GAIN;
-		ctrlLeftSpeed(m_LeftSpeed);
-		ctrlRightSpeed(m_RightSpeed);
+		m_MeasLeftSpeed -= MeasSpeedL[MeasSpeedidx];
+		m_MeasRightSpeed -= MeasSpeedR[MeasSpeedidx];
+
+		m_MeasLeftSpeed += m_LeftCounter*2;
+		m_MeasRightSpeed += m_RightCounter*2;
+
+		MeasSpeedL[MeasSpeedidx] = m_LeftCounter*2;
+		MeasSpeedR[MeasSpeedidx++] = m_RightCounter*2;
+		if (MeasSpeedidx >= SPEED_MOV_AVG)
+		{
+			MeasSpeedidx = 0;
+		}
+
+		fAccL = m_MeasLeftSpeed - iPrevSpeedL;
+		fAccR = m_MeasRightSpeed - iPrevSpeedR;
+
+		iPrevSpeedL = m_MeasLeftSpeed;
+		iPrevSpeedR = m_MeasRightSpeed;
+
+		fSpeedErrL = ((float)m_LeftSpeed*SPEED_CONV - (float)m_MeasLeftSpeed) * SPEED_ERROR_GAIN;
+		fSpeedErrR = ((float)m_RightSpeed*SPEED_CONV- (float)m_MeasRightSpeed) * SPEED_ERROR_GAIN;
+
+		fAccConsL = fSpeedErrL;
+		fAccConsR = fSpeedErrR;
+
+		fAccErrL = (fAccConsL - fAccL) * ACC_ERROR_GAIN;
+		fAccErrR = (fAccConsR - fAccR) * ACC_ERROR_GAIN;
+
+		fPrevComdL = fAccErrL;
+		fPrevComdR = fAccErrR;
+
+		ctrlLeftSpeed((int)fPrevComdL);
+		ctrlRightSpeed((int)fPrevComdR);
+
 		m_LeftCounter = 0;
 		m_RightCounter = 0;
 		m_Lock.release();
-		//printf ("Motor speed %d/%d\n", m_MeasLeftSpeed,m_MeasRightSpeed);
+		//printf ("Motor speed Consigne: %d/%d measured %d/%d err %f,%f\n", m_LeftSpeed, m_RightSpeed, m_MeasLeftSpeed,m_MeasRightSpeed, fSpeedErrL, fSpeedErrR);
+		//printf ("Motor torque Consigne: %f/%f measured %f/%f err %f,%f cmd %f,%f \n", fAccConsL, fAccConsR, fAccL,fAccR, fAccErrL, fAccErrR, fPrevComdL, fPrevComdR);
 
 	}
 }
