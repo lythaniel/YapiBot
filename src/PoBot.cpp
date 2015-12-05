@@ -13,7 +13,7 @@
 #include "Compass.h"
 #include "RangeFinder.h"
 #include "EventObserver.h"
-
+#include "ScriptEngine.h"
 
 #define MAIN_TEXTURE_WIDTH 640
 #define MAIN_TEXTURE_HEIGHT 480
@@ -48,6 +48,9 @@ int main(int argc, const char **argv)
 
 	//Finally create our main controler.
 	CController::getInstance();
+
+	//Script engine:
+	CScriptEngine::getInstance();
 
 	CSemaphore deadlock;
 	deadlock.wait (); //Semaphore are created with value 0, so it will wait forever.

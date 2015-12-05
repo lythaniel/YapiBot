@@ -11,14 +11,20 @@
 #include "Sampler.h"
 #include "Compass.h"
 #include "RangeFinder.h"
+#include "ScriptEngine.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-#define CONTROLLER_PERIOD 500
+#define CONTROLLER_PERIOD 250
 
-#define BEARING_ERR_GAIN 10
-#define BEARING_ERR_LIM 2
+#define BEARING_ERR_GAIN 5
+#define BEARING_ERR_LIM 4
+#define BEARING_GOOD_CNT_LIMIT 3
 #define BEARING_ERR_CLIP 200
+
+#define MOVE_STRAIGHT_ERR_GAIN 1
+
+#define COLLISION_MIN_DIST 15
 
 CController::CController() :
 m_State(CTRL_STATE_IDLE),
@@ -120,6 +126,14 @@ void CController::runCompassCalibration (PoBotStatus_t status)
 
 		if (abs(err) < BEARING_ERR_LIM)
 		{
+			m_BearingGoodCnt++;
+		}
+		else
+		{
+			m_BearingGoodCnt = 0;
+		}
+		if (m_BearingGoodCnt >= BEARING_GOOD_CNT_LIMIT)
+		{
 			m_State = CTRL_STATE_IDLE;
 			CMotors::getInstance()->move (0,0);
 			fprintf(stdout,"Compass calibration complete\n");
@@ -172,7 +186,7 @@ void CController::runMoveStraight (PoBotStatus_t status)
 {
 		m_DistMovedLeft += CMotors::getInstance()->getLeftDist();
 		m_DistMovedRight += CMotors::getInstance()->getRightDist();
-		if (status.range > 32000)
+		if (status.range < COLLISION_MIN_DIST)
 		{
 			m_ReqLeftMov = 0;
 			m_ReqRightMov = 0;
@@ -193,7 +207,7 @@ void CController::runMoveStraight (PoBotStatus_t status)
 		}
 		else
 		{
-			int err = (m_DistMovedLeft - m_DistMovedRight) * 10;
+			int err = (m_DistMovedLeft - m_DistMovedRight) * MOVE_STRAIGHT_ERR_GAIN;
 			int dir = 100;
 			if (m_ReqLeftMov < 0) dir = -100;
 
@@ -218,7 +232,16 @@ void CController::runAlignBearing (PoBotStatus_t status)
 
 		fprintf(stdout,"Aligning to %d current = %d\n", m_RequestedBearing, err);
 
+
 		if (abs(err) < BEARING_ERR_LIM)
+		{
+			m_BearingGoodCnt++;
+		}
+		else
+		{
+			m_BearingGoodCnt = 0;
+		}
+		if (m_BearingGoodCnt >= BEARING_GOOD_CNT_LIMIT)
 		{
 			m_State = CTRL_STATE_IDLE;
 			CMotors::getInstance()->move (0,0);
@@ -241,7 +264,7 @@ void CController::runMoveBearing (PoBotStatus_t status)
 {
 	m_DistMovedLeft += CMotors::getInstance()->getLeftDist();
 	m_DistMovedRight += CMotors::getInstance()->getRightDist();
-	if (status.range > 32000)
+	if (status.range < COLLISION_MIN_DIST)
 	{
 		m_ReqLeftMov = 0;
 		m_ReqRightMov = 0;
@@ -408,6 +431,9 @@ void CController::CmdPckReceived (char * buffer, unsigned int size) {
 		case CMD_TYPE_CMD:
 			processCmd(cmd,&buffer[2],size-2);
 			break;
+		case CMD_TYPE_SCRIPT:
+			CScriptEngine::getInstance()->RunScript("YapiBot.py");
+			break;
 		default:
 			fprintf(stderr,"Unknown command received !!!\n");
 			break;
@@ -418,7 +444,7 @@ void CController::CmdPckReceived (char * buffer, unsigned int size) {
 
 void CController::processCmdMove (PoBotCmd_t cmd, char * buffer, unsigned int size)
 {
-	int x,y;
+	int x,y,speed;
 
 	m_Lock.get();
 	if (m_State != CTRL_STATE_IDLE)
@@ -429,6 +455,14 @@ void CController::processCmdMove (PoBotCmd_t cmd, char * buffer, unsigned int si
 	}
 
 	m_Lock.release();
+	if (size == 4)
+	{
+		speed = toInt (&buffer[0]);
+	}
+	else
+	{
+		speed = 0;
+	}
 
 	switch (cmd)
 	{
@@ -438,24 +472,25 @@ void CController::processCmdMove (PoBotCmd_t cmd, char * buffer, unsigned int si
 
 		break;
 	case CmdMoveFwd:
-		fprintf(stdout,"Forward !!!\n");
-		CMotors::getInstance()->move (100,0);
+
+		fprintf(stdout,"Forward (%d) !!!\n", speed);
+		CMotors::getInstance()->move (speed,0);
 
 		break;
 	case CmdMoveRear:
-		fprintf(stdout,"Rear !!!\n");
-		CMotors::getInstance()->move (-100,0);
+		fprintf(stdout,"Rear (%d) !!!\n", speed);
+		CMotors::getInstance()->move (-speed,0);
 
 
 		break;
 	case CmdMoveLeft:
-		fprintf(stdout,"Left !!!\n");
-		CMotors::getInstance()->move (0,100);
+		fprintf(stdout,"Left (%d) !!!\n", speed);
+		CMotors::getInstance()->move (0,speed);
 
 		break;
 	case CmdMoveRight:
-		fprintf(stdout,"Right !!!\n");
-		CMotors::getInstance()->move (0,-100);
+		fprintf(stdout,"Right (%d) !!!\n", speed);
+		CMotors::getInstance()->move (0,-speed);
 
 		break;
 	case CmdMove:
@@ -504,6 +539,7 @@ void CController::processCmd (PoBotCmd_t cmd, char * buffer, unsigned int size)
 	switch (cmd)
 	{
 	case CmdCompassCal:
+		m_BearingGoodCnt = 0;
 		compassCalibration();
 		break;
 
@@ -513,6 +549,7 @@ void CController::processCmd (PoBotCmd_t cmd, char * buffer, unsigned int size)
 		break;
 
 	case CmdAlignBearing:
+		m_BearingGoodCnt = 0;
 		bearing = toInt (&buffer[0]);
 		alignBearing (bearing);
 		break;

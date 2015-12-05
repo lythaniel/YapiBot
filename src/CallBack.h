@@ -38,6 +38,7 @@ public:
 	void trigger (void) {
 		(m_pInstance->*m_Method)();
 	}
+	const C* getInstance (void) {return m_pInstance;}
 
 private:
 	C * m_pInstance;
@@ -84,6 +85,8 @@ public:
 		(m_pInstance->*m_Method)(p1);
 	}
 
+	const C* getInstance (void) {return m_pInstance;}
+
 private:
 	C * m_pInstance;
 	Method m_Method;
@@ -125,6 +128,8 @@ public:
 	void trigger (param1 p1, param2 p2) {
 		(m_pInstance->*m_Method)(p1, p2);
 	}
+
+	const C* getInstance (void) {return m_pInstance;}
 
 private:
 	C * m_pInstance;
@@ -169,6 +174,8 @@ public:
 		(m_pInstance->*m_Method)(p1, p2, p3);
 	}
 
+	virtual const C* getInstance (void) {return m_pInstance;}
+
 private:
 	C * m_pInstance;
 	Method m_Method;
@@ -211,6 +218,8 @@ public:
 	ret trigger (void) {
 		return (m_pInstance->*m_Method)();
 	}
+
+	const C* getInstance (void) {return m_pInstance;}
 
 private:
 	C * m_pInstance;
@@ -255,6 +264,8 @@ public:
 		return (m_pInstance->*m_Method)(p1);
 	}
 
+	const C* getInstance (void) {return m_pInstance;}
+
 private:
 	C * m_pInstance;
 	Method m_Method;
@@ -296,6 +307,8 @@ public:
 	ret trigger (param1 p1, param2 p2) {
 		return (m_pInstance->*m_Method)(p1, p2);
 	}
+
+	const C* getInstance (void) {return m_pInstance;}
 
 private:
 	C * m_pInstance;
@@ -339,6 +352,8 @@ public:
 	ret trigger (param1 p1, param2 p2, param3 p3) {
 		return (m_pInstance->*m_Method)(p1, p2, p3);
 	}
+
+	const C* getInstance (void) {return m_pInstance;}
 
 private:
 	C * m_pInstance;

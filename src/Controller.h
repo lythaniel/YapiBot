@@ -16,6 +16,7 @@
 #define CMD_TYPE_MASK 0xF000
 #define CMD_TYPE_MOVE 0x1000
 #define CMD_TYPE_CMD 0x2000
+#define CMD_TYPE_SCRIPT 0x3000
 
 typedef enum {
 	CmdMoveStop = CMD_TYPE_MOVE | 0,
@@ -92,6 +93,7 @@ private:
 
 	int m_DistMovedLeft;
 	int m_DistMovedRight;
+	int m_BearingGoodCnt;
 
 	int m_RequestedBearing;
 	int m_ReqLeftMov;

@@ -2,11 +2,12 @@ cmake_minimum_required(VERSION 2.8)
 project( PoBot )
 SET(COMPILE_DEFINITIONS -Werror -pthread)
 find_package( OpenCV REQUIRED )
+find_package( PythonLibs REQUIRED)
 #set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package( Threads REQUIRED )
 #target_compile_options(PUBLIC PoBot "-pthread")
-SET(CMAKE_CXX_FLAGS_DEBUG "-lpthread") 
-SET(CMAKE_CXX_FLAGS_RELEASE "-lpthread")
+SET(CMAKE_CXX_FLAGS_DEBUG "-lpthread -g -o0 ") 
+SET(CMAKE_CXX_FLAGS_RELEASE "-lpthread -o3")
 
 find_path (OPT_VC bcm_host.h /opt/vc/include/)
 find_path (RPI_GPIO pigpio.h /usr/local/include)
@@ -30,6 +31,8 @@ include_directories(${OPT_VC}/interface/vmcs_host/linux)
 include_directories(${OPT_VC}/host_applications/linux/libs/bcm_host/include)
 
 include_directories(${GNU_EABIHF_PATH})
+
+include_directories(${PYTHON_INCLUDE_DIRS}/)
 
 
 find_PATH (USR_LIBS libgtkglext-x11-1.0.so.0 /usr/lib/)
@@ -88,6 +91,9 @@ add_executable(
 	Sampler.cpp
 	RangeFinder.cpp
 	EventObserver.cpp
+	ScriptEngine.cpp
+	PythonApi.cpp
+	PythonBinding.cpp
 )
 
 target_link_libraries(
@@ -106,9 +112,7 @@ rt
 	libbcm_host.so
 	GLESv2
 	EGL
-	
-	
-
+	${PYTHON_LIBRARIES}
 	${OpenCV_LIBS}
 	${GPIO_LIBS}
 

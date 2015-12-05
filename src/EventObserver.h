@@ -27,6 +27,21 @@ public:
 		Callback3base<Event_t, int, void *> * cb = new Callback3<C,Event_t,int,void *> (instance, method);
 		m_cbList.push_back(cbPair_t(mask,cb));
 	}
+	template <class C>
+		void unRegister (C* instance) {
+			Callback3<C,Event_t,int,void *> * cb;
+			cbVector_t::iterator it;
+			for (it = m_cbList.begin();it != m_cbList.end(); it++)
+			{
+				cb = static_cast<Callback3 <C,Event_t,int,void *> *> (it->second);
+				if (cb->getInstance() == instance)
+				{
+					m_cbList.erase(it);
+					delete cb;
+					break;
+				}
+			}
+		}
 
 
 private:
