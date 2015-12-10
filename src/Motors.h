@@ -6,6 +6,7 @@
 #include "Thread.h"
 #include "Sampler.h"
 #include "Mutex.h"
+#include "YapiBotCmd.h"
 
 
 class CMotors : public CSingleton<CMotors>
@@ -35,9 +36,16 @@ public:
 
 	void run (void *);
 
+	void setParameter (YapiBotParam_t, char * buffer, unsigned int size);
+	void getParameter (YapiBotParam_t param);
+
+
 private:
 	void ctrlLeftSpeed (int speed);
 	void ctrlRightSpeed (int speed);
+
+	int toInt (char * buff);
+	float toFloat (char * buff);
 
 	int m_LeftSpeed;
 	int m_RightSpeed;
@@ -54,6 +62,11 @@ private:
 	int m_LastGpioRight;
 	int m_DistLeft;
 	int m_DistRight;
+
+	float m_SpeedConv;
+	float m_SpeedErrGain;
+	float m_AccErrGain;
+
 
 	CMutex m_Lock;
 

@@ -11,7 +11,8 @@
 #include "EventObserver.h"
 
 CPythonApi::CPythonApi() :
-m_EventSem(0)
+m_EventSem(0),
+m_LastEvent(CtrlMoveCancel)
 {
 	CEventObserver::getInstance()->registerOnEvent(EVENT_MASK_CTRL,this,&CPythonApi::EventCallback);
 }

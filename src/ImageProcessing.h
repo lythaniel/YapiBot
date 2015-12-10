@@ -10,6 +10,7 @@
 
 #include "Singleton.h"
 #include <stdint.h>
+#include "YapiBotCmd.h"
 
 class CCamera;
 class CVideoStreamer;
@@ -23,6 +24,9 @@ public:
 
 	void VideoProcThread (void *);
 	void init(uint32_t width, uint32_t height,uint32_t framerate);
+
+	void setParameter (YapiBotParam_t param, char * buffer, unsigned int size);
+	void getParameter (YapiBotParam_t param);
 
 
 private:

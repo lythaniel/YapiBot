@@ -12,6 +12,7 @@
 #include "Compass.h"
 #include "RangeFinder.h"
 #include "ScriptEngine.h"
+#include "ImageProcessing.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -30,9 +31,15 @@ CController::CController() :
 m_State(CTRL_STATE_IDLE),
 m_DistMovedLeft(0),
 m_DistMovedRight(0),
+m_BearingGoodCnt(0),
 m_RequestedBearing(0),
 m_ReqLeftMov(0),
-m_ReqRightMov(0)
+m_ReqRightMov(0),
+m_CollisionDist(COLLISION_MIN_DIST),
+m_MvtErrGain(MOVE_STRAIGHT_ERR_GAIN),
+m_BearingErrGain(BEARING_ERR_GAIN),
+m_BearingErrLim(BEARING_ERR_LIM),
+m_BearingGoodCntLim(BEARING_GOOD_CNT_LIMIT)
 {
 	CNetwork::getInstance()->regCmdReceived(this,&CController::CmdPckReceived);
 	CEventObserver::getInstance()->registerOnEvent(EVENT_MASK_ALL,this,&CController::EventCallback);
@@ -48,8 +55,8 @@ CController::~CController() {
 void CController::run(void *)
 {
 	CSampler sampler (CONTROLLER_PERIOD);
-	PoBotStatus_t status;
-	status.id = POBOT_STATUS;
+	YapiBotStatus_t status;
+	status.id = YAPIBOT_STATUS;
 	while (1) {
 		sampler.wait();
 		CMotors * motors = CMotors::getInstance();
@@ -87,13 +94,13 @@ void CController::run(void *)
 		}
 		m_Lock.release();
 
-		CNetwork::getInstance()->sendCmdPck ((unsigned char *)&status, sizeof(PoBotStatus_t));
+		CNetwork::getInstance()->sendCmdPck ((unsigned char *)&status, sizeof(YapiBotStatus_t));
 	}
 
 }
 
 
-void CController::runCompassCalibration (PoBotStatus_t status)
+void CController::runCompassCalibration (YapiBotStatus_t status)
 {
 	//First we need to align the sensor by rotating at least 2 turns.
 	if ((m_ReqLeftMov != 0)||(m_ReqRightMov != 0))
@@ -124,7 +131,7 @@ void CController::runCompassCalibration (PoBotStatus_t status)
 
 	    fprintf(stdout,"Aligning to north current = %d error = %d\n",status.heading, err);
 
-		if (abs(err) < BEARING_ERR_LIM)
+		if (abs(err) < m_BearingErrLim)
 		{
 			m_BearingGoodCnt++;
 		}
@@ -132,7 +139,7 @@ void CController::runCompassCalibration (PoBotStatus_t status)
 		{
 			m_BearingGoodCnt = 0;
 		}
-		if (m_BearingGoodCnt >= BEARING_GOOD_CNT_LIMIT)
+		if (m_BearingGoodCnt >= m_BearingGoodCntLim)
 		{
 			m_State = CTRL_STATE_IDLE;
 			CMotors::getInstance()->move (0,0);
@@ -141,7 +148,7 @@ void CController::runCompassCalibration (PoBotStatus_t status)
 		}
 		else
 		{
-			err = err * BEARING_ERR_GAIN;
+			err = err * m_BearingErrGain;
 			if (err > BEARING_ERR_CLIP)
 				err = BEARING_ERR_CLIP;
 			else if (err < -BEARING_ERR_CLIP)
@@ -156,7 +163,7 @@ void CController::runCompassCalibration (PoBotStatus_t status)
 
 }
 
-void CController::runRotate (PoBotStatus_t status)
+void CController::runRotate (YapiBotStatus_t status)
 {
 	m_DistMovedLeft += CMotors::getInstance()->getLeftDist();
 	m_DistMovedRight += CMotors::getInstance()->getRightDist();
@@ -182,11 +189,11 @@ void CController::runRotate (PoBotStatus_t status)
 }
 
 
-void CController::runMoveStraight (PoBotStatus_t status)
+void CController::runMoveStraight (YapiBotStatus_t status)
 {
 		m_DistMovedLeft += CMotors::getInstance()->getLeftDist();
 		m_DistMovedRight += CMotors::getInstance()->getRightDist();
-		if (status.range < COLLISION_MIN_DIST)
+		if (status.range < m_CollisionDist)
 		{
 			m_ReqLeftMov = 0;
 			m_ReqRightMov = 0;
@@ -207,7 +214,7 @@ void CController::runMoveStraight (PoBotStatus_t status)
 		}
 		else
 		{
-			int err = (m_DistMovedLeft - m_DistMovedRight) * MOVE_STRAIGHT_ERR_GAIN;
+			int err = (m_DistMovedLeft - m_DistMovedRight) * m_MvtErrGain;
 			int dir = 100;
 			if (m_ReqLeftMov < 0) dir = -100;
 
@@ -217,7 +224,7 @@ void CController::runMoveStraight (PoBotStatus_t status)
 			CMotors::getInstance()->move (dir,err);
 		}
 }
-void CController::runAlignBearing (PoBotStatus_t status)
+void CController::runAlignBearing (YapiBotStatus_t status)
 {
 	//Sensor should be calibrated, let's align to the north.
 		int err = status.heading - m_RequestedBearing;
@@ -233,7 +240,7 @@ void CController::runAlignBearing (PoBotStatus_t status)
 		fprintf(stdout,"Aligning to %d current = %d\n", m_RequestedBearing, err);
 
 
-		if (abs(err) < BEARING_ERR_LIM)
+		if (abs(err) < m_BearingErrLim)
 		{
 			m_BearingGoodCnt++;
 		}
@@ -241,7 +248,7 @@ void CController::runAlignBearing (PoBotStatus_t status)
 		{
 			m_BearingGoodCnt = 0;
 		}
-		if (m_BearingGoodCnt >= BEARING_GOOD_CNT_LIMIT)
+		if (m_BearingGoodCnt >= m_BearingGoodCntLim)
 		{
 			m_State = CTRL_STATE_IDLE;
 			CMotors::getInstance()->move (0,0);
@@ -250,7 +257,7 @@ void CController::runAlignBearing (PoBotStatus_t status)
 		}
 		else
 		{
-			err = err * BEARING_ERR_GAIN;
+			err = err * m_BearingErrGain;
 			if (err > BEARING_ERR_CLIP)
 				err = BEARING_ERR_CLIP;
 			else if (err < -BEARING_ERR_CLIP)
@@ -260,11 +267,11 @@ void CController::runAlignBearing (PoBotStatus_t status)
 		}
 
 }
-void CController::runMoveBearing (PoBotStatus_t status)
+void CController::runMoveBearing (YapiBotStatus_t status)
 {
 	m_DistMovedLeft += CMotors::getInstance()->getLeftDist();
 	m_DistMovedRight += CMotors::getInstance()->getRightDist();
-	if (status.range < COLLISION_MIN_DIST)
+	if (status.range < m_CollisionDist)
 	{
 		m_ReqLeftMov = 0;
 		m_ReqRightMov = 0;
@@ -294,7 +301,7 @@ void CController::runMoveBearing (PoBotStatus_t status)
 		{
 			err += 360;
 		}
-		err = err * BEARING_ERR_GAIN;
+		err = err * m_BearingErrGain;
 		int dir = 100;
 		if (m_ReqLeftMov < 0) dir = -100;
 
@@ -417,12 +424,12 @@ void CController::rotate (int rot)
 
 
 void CController::CmdPckReceived (char * buffer, unsigned int size) {
-	PoBotCmd_t cmd;
-	PoBotCmd_t cmdType;
+	YapiBotCmd_t cmd;
+	YapiBotCmd_t cmdType;
 	if ((buffer != NULL)&&(size > 1)) //Need at least 2 bytes for the cmd.
 	{
-		cmd = (PoBotCmd_t)((buffer[0] << 8) | (buffer[1])); //Cmd is MSB.
-		cmdType  = PoBotCmd_t(cmd & CMD_TYPE_MASK);
+		cmd = (YapiBotCmd_t)((buffer[0] << 8) | (buffer[1])); //Cmd is MSB.
+		cmdType  = YapiBotCmd_t(cmd & CMD_TYPE_MASK);
 		switch (cmdType)
 		{
 		case CMD_TYPE_MOVE:
@@ -434,6 +441,10 @@ void CController::CmdPckReceived (char * buffer, unsigned int size) {
 		case CMD_TYPE_SCRIPT:
 			CScriptEngine::getInstance()->RunScript("YapiBot.py");
 			break;
+		case CMD_TYPE_PARAM:
+			fprintf(stderr,"received param cmd !!!\n");
+			processCmdParam(cmd,&buffer[2],size-2);
+			break;
 		default:
 			fprintf(stderr,"Unknown command received !!!\n");
 			break;
@@ -442,7 +453,7 @@ void CController::CmdPckReceived (char * buffer, unsigned int size) {
 	}
 }
 
-void CController::processCmdMove (PoBotCmd_t cmd, char * buffer, unsigned int size)
+void CController::processCmdMove (YapiBotCmd_t cmd, char * buffer, unsigned int size)
 {
 	int x,y,speed;
 
@@ -523,7 +534,7 @@ void CController::processCmdMove (PoBotCmd_t cmd, char * buffer, unsigned int si
 
 }
 
-void CController::processCmd (PoBotCmd_t cmd, char * buffer, unsigned int size)
+void CController::processCmd (YapiBotCmd_t cmd, char * buffer, unsigned int size)
 {
 	int dist,bearing;
 
@@ -567,6 +578,113 @@ void CController::processCmd (PoBotCmd_t cmd, char * buffer, unsigned int size)
 		fprintf(stderr,"Unknown command received !!!\n");
 		break;
 	}
+}
+
+void CController::processCmdParam (YapiBotCmd_t cmd, char * buffer, unsigned int size)
+{
+	//YapiBotParam_t param = (YapiBotParam_t)((buffer[0] << 8) | (buffer[1]));
+	YapiBotParam_t param = (YapiBotParam_t)toInt(&buffer[0]);
+	printf("ProcessCmdParam with param = 0x%x\n", param);
+
+	switch (param & PARAM_MASK)
+	{
+	case CONTROL_PARAM:
+		if (cmd == CmdSetParam)
+		{
+			setParameter(param,&buffer[4],size-4);
+		}
+		else
+		{
+			getParameter(param);
+		}
+		break;
+	case MOTOR_PARAM:
+		if (cmd == CmdSetParam)
+		{
+			CMotors::getInstance()->setParameter(param,&buffer[4],size-4);
+		}
+		else
+		{
+			CMotors::getInstance()->getParameter(param);
+		}
+		break;
+	case CAMERA_PARAM:
+	case IMGPROC_PARAM:
+		if (cmd == CmdSetParam)
+		{
+			CImageProcessing::getInstance()->setParameter(param,&buffer[4],size-4);
+		}
+		else
+		{
+			CImageProcessing::getInstance()->getParameter(param);
+		}
+		break;
+	default:
+		fprintf (stderr, "Unknown parameter !\n");
+		break;
+	}
+
+}
+
+void CController::setParameter (YapiBotParam_t param, char * buffer, unsigned int size)
+{
+	unsigned int val;
+	if (size < 4)
+	{
+		fprintf (stderr, "Cannot set controller parameter (not enough arguments)");
+	}
+
+
+	switch (param)
+	{
+		case CtrlParamColDist:
+			m_CollisionDist = toInt (&buffer[0]);
+			break;
+		case CtrlParamMvErrGain:
+			m_MvtErrGain = toInt (&buffer[0]);
+			break;
+		case CtrlParamBearingErrGain:
+			m_BearingErrGain = toInt (&buffer[0]);
+			break;
+		case CtrlParamBearingErrLim:
+			m_BearingErrLim = toInt (&buffer[0]);
+			break;
+		case CtrlParamBearingGoodCnt:
+			m_BearingGoodCntLim = toInt (&buffer[0]);
+			break;
+		default:
+			fprintf (stderr, "Unknown controller parameter !");
+			break;
+	}
+}
+
+void CController::getParameter (YapiBotParam_t param)
+{
+	YapiBotParamAnswer_t answer;
+	answer.id = YAPIBOT_PARAM;
+	answer.param = param;
+	switch (param)
+	{
+		case CtrlParamColDist:
+			answer.val = m_CollisionDist;
+			break;
+		case CtrlParamMvErrGain:
+			answer.val = m_MvtErrGain;
+			break;
+		case CtrlParamBearingErrGain:
+			answer.val = m_BearingErrGain;
+			break;
+		case CtrlParamBearingErrLim:
+			answer.val = m_BearingErrLim;
+			break;
+		case CtrlParamBearingGoodCnt:
+			answer.val = m_BearingGoodCntLim;
+			break;
+		default:
+			fprintf (stderr, "Unknown controller parameter !");
+			return;
+	}
+	CNetwork::getInstance()->sendCmdPck ((unsigned char *)&answer, sizeof(YapiBotParamAnswer_t));
 }
 
 void CController::EventCallback (Event_t evt, int data1, void * data2)

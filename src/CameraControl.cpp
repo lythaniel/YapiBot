@@ -206,6 +206,26 @@ int raspicamcontrol_set_saturation(MMAL_COMPONENT_T *camera, int saturation)
 }
 
 /**
+ * Get the sharpness of the image
+ * @param camera Pointer to camera component
+ * @return saturation adjustment -100 to 100
+ */
+int raspicamcontrol_get_saturation(MMAL_COMPONENT_T *camera)
+{
+   int ret = 0;
+
+   if (!camera)
+      return 0;
+
+   MMAL_RATIONAL_T value;
+   if (MMAL_SUCCESS == mmal_port_parameter_get_rational(camera->control, MMAL_PARAMETER_SATURATION, &value))
+   {
+	   ret = value.num;
+   }
+   return ret;
+}
+
+/**
  * Set the sharpness of the image
  * @param camera Pointer to camera component
  * @param sharpness Sharpness adjustment -100 to 100
@@ -228,6 +248,25 @@ int raspicamcontrol_set_sharpness(MMAL_COMPONENT_T *camera, int sharpness)
       ret = 1;
    }
 
+   return ret;
+}
+/**
+ * Get the sharpness of the image
+ * @param camera Pointer to camera component
+ * @return sharpness Sharpness adjustment -100 to 100
+ */
+int raspicamcontrol_get_sharpness(MMAL_COMPONENT_T *camera)
+{
+   int ret = 0;
+
+   if (!camera)
+      return 0;
+
+   MMAL_RATIONAL_T value;
+   if (MMAL_SUCCESS == mmal_port_parameter_get_rational(camera->control, MMAL_PARAMETER_SHARPNESS, &value))
+   {
+	   ret = value.num;
+   }
    return ret;
 }
 
@@ -259,6 +298,27 @@ int raspicamcontrol_set_contrast(MMAL_COMPONENT_T *camera, int contrast)
 }
 
 /**
+ * Get the contrast of the image
+ * @param camera Pointer to camera component
+ * @return contrast contrast adjustment -100 to 100
+ */
+int raspicamcontrol_get_contrast(MMAL_COMPONENT_T *camera)
+{
+   int ret = 0;
+
+   if (!camera)
+      return 0;
+
+   MMAL_RATIONAL_T value;
+   if (MMAL_SUCCESS == mmal_port_parameter_get_rational(camera->control, MMAL_PARAMETER_CONTRAST, &value))
+   {
+	   ret = value.num;
+   }
+   return ret;
+}
+
+
+/**
  * Adjust the brightness level for images
  * @param camera Pointer to camera component
  * @param brightness Value to adjust, 0 to 100
@@ -286,6 +346,27 @@ int raspicamcontrol_set_brightness(MMAL_COMPONENT_T *camera, int brightness)
 }
 
 /**
+ * Get the brightness of the image
+ * @param camera Pointer to camera component
+ * @return brightness adjustment -100 to 100
+ */
+int raspicamcontrol_get_brightness(MMAL_COMPONENT_T *camera)
+{
+   int ret = 0;
+
+   if (!camera)
+      return 0;
+
+   MMAL_RATIONAL_T value;
+   if (MMAL_SUCCESS == mmal_port_parameter_get_rational(camera->control, MMAL_PARAMETER_BRIGHTNESS, &value))
+   {
+	   ret = value.num;
+   }
+   return ret;
+}
+
+
+/**
  * Adjust the ISO used for images
  * @param camera Pointer to camera component
  * @param ISO Value to set TODO :
@@ -298,7 +379,25 @@ int raspicamcontrol_set_ISO(MMAL_COMPONENT_T *camera, int ISO)
 
    return mmal_status_to_int(mmal_port_parameter_set_uint32(camera->control, MMAL_PARAMETER_ISO, ISO));
 }
+/**
+ * Get the sharpness of the image
+ * @param camera Pointer to camera component
+ * @return ISO Value
+ */
+int raspicamcontrol_get_ISO(MMAL_COMPONENT_T *camera)
+{
+   int ret = 0;
 
+   if (!camera)
+      return 0;
+
+   uint32_t value;
+   if (MMAL_SUCCESS == mmal_port_parameter_get_uint32(camera->control, MMAL_PARAMETER_ISO, &value))
+   {
+	   ret = value;
+   }
+   return ret;
+}
 /**
  * Adjust the metering mode for images
  * @param camera Pointer to camera component

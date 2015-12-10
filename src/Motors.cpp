@@ -1,6 +1,7 @@
 #include <pigpio.h>
 #include <cstdlib>
 #include "Motors.h"
+#include "Network.h"
 
 #define PWM_GPIO_R_PWM 23
 #define PWM_GPIO_R_FW 24
@@ -22,13 +23,11 @@
 
 #define MOTOR_PERIOD 10
 
+#define SPEED_CONV  1.5
+#define SPEED_ERROR_GAIN  1.5
+#define ACC_ERROR_GAIN 0.8
 
-#define MOTOR_FEEDBACK_GAIN_DIV 2
-#define MOTOR_FEEDBACK_GAIN_MUL 4
-
-//#define MOTOR_FEEDBACK_GAIN_DIV
-
-//const float gMotorCurve [11] = {
+#define SPEED_MOV_AVG 5
 
 static void GpioCbL (int gpio, int level, unsigned int tick, void * user)
 {
@@ -57,7 +56,10 @@ m_LastGpioLeft(-1),
 m_LastGpioRight(-1),
 m_CamPos(50),
 m_DistLeft(0),
-m_DistRight(0)
+m_DistRight(0),
+m_SpeedConv(SPEED_CONV),
+m_SpeedErrGain(SPEED_ERROR_GAIN),
+m_AccErrGain(ACC_ERROR_GAIN)
 {
 #ifdef MOTORS_CONTROL
 	gpioInitialise();
@@ -400,11 +402,7 @@ void CMotors::EncoderCbRight(int gpio, int level, unsigned int tick)
 
 }
 
-#define SPEED_CONV  1.5
-#define SPEED_ERROR_GAIN  1.5
-#define ACC_ERROR_GAIN 0.8
 
-#define SPEED_MOV_AVG 5
 void CMotors::run (void *)
 {
 	CSampler sampler (MOTOR_PERIOD);
@@ -454,14 +452,14 @@ void CMotors::run (void *)
 		iPrevSpeedL = m_MeasLeftSpeed;
 		iPrevSpeedR = m_MeasRightSpeed;
 
-		fSpeedErrL = ((float)m_LeftSpeed*SPEED_CONV - (float)m_MeasLeftSpeed) * SPEED_ERROR_GAIN;
-		fSpeedErrR = ((float)m_RightSpeed*SPEED_CONV- (float)m_MeasRightSpeed) * SPEED_ERROR_GAIN;
+		fSpeedErrL = ((float)m_LeftSpeed*m_SpeedConv - (float)m_MeasLeftSpeed) * m_SpeedErrGain;
+		fSpeedErrR = ((float)m_RightSpeed*m_SpeedConv- (float)m_MeasRightSpeed) * m_SpeedErrGain;
 
 		fAccConsL = fSpeedErrL;
 		fAccConsR = fSpeedErrR;
 
-		fAccErrL = (fAccConsL - fAccL) * ACC_ERROR_GAIN;
-		fAccErrR = (fAccConsR - fAccR) * ACC_ERROR_GAIN;
+		fAccErrL = (fAccConsL - fAccL) * m_AccErrGain;
+		fAccErrR = (fAccConsR - fAccR) * m_AccErrGain;
 
 		fPrevComdL = fAccErrL;
 		fPrevComdR = fAccErrR;
@@ -478,3 +476,64 @@ void CMotors::run (void *)
 	}
 }
 
+void CMotors::setParameter (YapiBotParam_t param, char * buffer, unsigned int size)
+{
+	unsigned int val;
+	if (size < 4)
+	{
+		fprintf (stderr, "Cannot set controller parameter (not enough arguments)");
+	}
+
+
+	switch (param)
+	{
+		case MtrParamSpeedConv:
+			m_SpeedConv = toFloat (&buffer[0]);
+			break;
+		case MtrParamSpeedErrGain:
+			m_SpeedErrGain = toFloat (&buffer[0]);
+			break;
+		case MtrParamAccErrGain:
+			m_AccErrGain = toFloat (&buffer[0]);
+			break;
+		default:
+			fprintf (stderr, "Unknown motor parameter !");
+			break;
+	}
+}
+void CMotors::getParameter (YapiBotParam_t param)
+{
+	YapiBotParamAnswer_t answer;
+	answer.id = YAPIBOT_PARAM;
+	answer.param = param;
+	switch (param)
+	{
+		case MtrParamSpeedConv:
+			answer.val = *((int*)&m_SpeedConv);
+			break;
+		case MtrParamSpeedErrGain:
+			answer.val = *((int*)&m_SpeedErrGain);
+			break;
+		case MtrParamAccErrGain:
+			answer.val = *((int*)&m_AccErrGain);
+			break;
+
+		default:
+			fprintf (stderr, "Unknown motor parameter !");
+			return;
+	}
+	CNetwork::getInstance()->sendCmdPck ((unsigned char *)&answer, sizeof(YapiBotParamAnswer_t));
+}
+
+int CMotors::toInt (char * buff)
+{
+	int ret = (buff [0] << 24) + (buff [1] << 16) + (buff [2] << 8) + buff [3];
+	return (ret);
+}
+
+float CMotors::toFloat (char * buff)
+{
+	int val = (buff [0] << 24) + (buff [1] << 16) + (buff [2] << 8) + buff [3];
+	float ret = *((float*)&val);
+	return (ret);
+}

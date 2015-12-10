@@ -2,6 +2,7 @@
 
 #include "mmalincludes.h"
 #include "CameraControl.h"
+#include "YapiBotCmd.h"
 
 class CCamera;
 
@@ -42,6 +43,9 @@ public:
 	void EndReadFrame(int level);
 	MMAL_COMPONENT_T* getCameraComponent() {return CameraComponent;}
 	MMAL_COMPONENT_T* getSplitterComponent () {return SplitterComponent;}
+
+	void setParameter (YapiBotParam_t param, char * buffer, unsigned int size);
+	void getParameter (YapiBotParam_t param);
 
 private:
 	CCamera();

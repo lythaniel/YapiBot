@@ -7,6 +7,7 @@ http://raufast.org/download/camcv_vid0.c to get the camera feeding into opencv. 
 
 #include "Camera.h"
 #include <stdio.h>
+#include "Network.h"
 
 // Standard port setting for the camera component
 #define MMAL_CAMERA_PREVIEW_PORT 0
@@ -714,4 +715,67 @@ error:
 	if(buffer_pool)
 		mmal_port_pool_destroy(port,buffer_pool);
 	return NULL;
+}
+
+void CCamera::setParameter (YapiBotParam_t param, char * buffer, unsigned int size)
+{
+	int val;
+	if (size < 4)
+	{
+		fprintf (stderr, "Cannot set camera parameter (not enough arguments)");
+	}
+
+	val = (buffer [0] << 24) + (buffer [1] << 16) + (buffer [2] << 8) + buffer [3];
+	switch (param)
+	{
+		case CamParamSaturation:
+			raspicamcontrol_set_saturation(CameraComponent,val);
+			break;
+		case CamParamContrast:
+			raspicamcontrol_set_contrast(CameraComponent,val);
+			break;
+		case CamParamBrightness:
+			raspicamcontrol_set_brightness(CameraComponent,val);
+			break;
+		case CamParamsharpness:
+			raspicamcontrol_set_sharpness(CameraComponent,val);
+			break;
+		case CamParamIso:
+			raspicamcontrol_set_ISO(CameraComponent,val);
+			break;
+
+		default:
+			fprintf (stderr, "Unknown camera parameter !");
+			break;
+	}
+}
+
+void CCamera::getParameter (YapiBotParam_t param)
+{
+	YapiBotParamAnswer_t answer;
+	answer.id = YAPIBOT_PARAM;
+	answer.param = param;
+	switch (param)
+	{
+		case CamParamSaturation:
+			answer.val = raspicamcontrol_get_saturation(CameraComponent);
+			break;
+		case CamParamContrast:
+			answer.val = raspicamcontrol_get_contrast(CameraComponent);
+			break;
+		case CamParamBrightness:
+			answer.val = raspicamcontrol_get_brightness(CameraComponent);
+			break;
+		case CamParamsharpness:
+			answer.val = raspicamcontrol_get_sharpness(CameraComponent);
+			break;
+		case CamParamIso:
+			answer.val = raspicamcontrol_get_ISO(CameraComponent);
+			break;
+
+		default:
+			fprintf (stderr, "Unknown camera parameter !");
+			return;
+	}
+	CNetwork::getInstance()->sendCmdPck ((unsigned char *)&answer, sizeof(YapiBotParamAnswer_t));
 }

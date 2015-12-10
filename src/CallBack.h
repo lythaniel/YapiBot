@@ -174,7 +174,7 @@ public:
 		(m_pInstance->*m_Method)(p1, p2, p3);
 	}
 
-	virtual const C* getInstance (void) {return m_pInstance;}
+	const C* getInstance (void) {return m_pInstance;}
 
 private:
 	C * m_pInstance;

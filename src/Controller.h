@@ -12,40 +12,7 @@
 #include "Thread.h"
 #include "Mutex.h"
 #include "EventObserver.h"
-
-#define CMD_TYPE_MASK 0xF000
-#define CMD_TYPE_MOVE 0x1000
-#define CMD_TYPE_CMD 0x2000
-#define CMD_TYPE_SCRIPT 0x3000
-
-typedef enum {
-	CmdMoveStop = CMD_TYPE_MOVE | 0,
-	CmdMoveFwd = CMD_TYPE_MOVE | 1,
-	CmdMoveRear = CMD_TYPE_MOVE | 2,
-	CmdMoveLeft = CMD_TYPE_MOVE | 3,
-	CmdMoveRight = CMD_TYPE_MOVE | 4,
-	CmdMove = CMD_TYPE_MOVE | 5,
-	CmdMoveCam = CMD_TYPE_MOVE | 6,
-	CmdCompassCal = CMD_TYPE_CMD | 0,
-	CmdMoveStraight = CMD_TYPE_CMD | 1,
-	CmdAlignBearing = CMD_TYPE_CMD | 2,
-	CmdMoveBearing = CMD_TYPE_CMD | 3,
-	CmdRotate = CMD_TYPE_CMD | 4,
-} PoBotCmd_t;
-
-#define POBOT_STATUS 0xDEADBEFF
-typedef struct {
-	int id;
-	int heading;
-	int speed_left;
-	int speed_right;
-	int camera_pos;
-	int range;
-	int meas_left;
-	int meas_right;
-
-} PoBotStatus_t;
-
+#include "YapiBotCmd.h"
 
 
 class CController: public CSingleton <CController> {
@@ -76,16 +43,24 @@ public:
 
 	void EventCallback (Event_t evt, int data1, void * data2);
 
+	void setParameter (YapiBotParam_t, char * buffer, unsigned int size);
+	void getParameter (YapiBotParam_t param);
+
+
 private:
 
-	void processCmdMove (PoBotCmd_t cmd, char * buffer, unsigned int size);
-	void processCmd (PoBotCmd_t cmd, char * buffer, unsigned int size);
+	void processCmdMove (YapiBotCmd_t cmd, char * buffer, unsigned int size);
+	void processCmd (YapiBotCmd_t cmd, char * buffer, unsigned int size);
 
-	void runCompassCalibration (PoBotStatus_t status);
-	void runMoveStraight (PoBotStatus_t status);
-	void runAlignBearing (PoBotStatus_t status);
-	void runMoveBearing (PoBotStatus_t status);
-	void runRotate (PoBotStatus_t status);
+	void processCmdParam (YapiBotCmd_t cmd, char * buffer, unsigned int size);
+
+
+
+	void runCompassCalibration (YapiBotStatus_t status);
+	void runMoveStraight (YapiBotStatus_t status);
+	void runAlignBearing (YapiBotStatus_t status);
+	void runMoveBearing (YapiBotStatus_t status);
+	void runRotate (YapiBotStatus_t status);
 
 	CThread * m_Thread;
 
@@ -98,6 +73,12 @@ private:
 	int m_RequestedBearing;
 	int m_ReqLeftMov;
 	int m_ReqRightMov;
+
+	unsigned int m_CollisionDist;
+	unsigned int m_MvtErrGain;
+	unsigned int m_BearingErrGain;
+	unsigned int m_BearingErrLim;
+	unsigned int m_BearingGoodCntLim;
 
 	CMutex m_Lock;
 

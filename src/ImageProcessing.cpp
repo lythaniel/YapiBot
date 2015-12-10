@@ -224,3 +224,28 @@ void CImageProcessing::VideoProcThread (void *)
 
 }
 
+void CImageProcessing::setParameter (YapiBotParam_t param, char * buffer, unsigned int size)
+{
+	if ((param & PARAM_MASK) == CAMERA_PARAM)
+	{
+		m_pCamera->setParameter(param,buffer,size);
+	}
+	else
+	{
+
+	}
+
+}
+void CImageProcessing::getParameter (YapiBotParam_t param)
+{
+	if ((param & PARAM_MASK) == CAMERA_PARAM)
+	{
+		m_pCamera->getParameter(param);
+	}
+	else
+	{
+
+	}
+
+}
+
