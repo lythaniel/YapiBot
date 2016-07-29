@@ -37,7 +37,7 @@ include_directories(${PYTHON_INCLUDE_DIRS}/)
 
 find_PATH (USR_LIBS libgtkglext-x11-1.0.so.0 /usr/lib/)
 
-find_library (GPIO_LIBS libpigpio.so /usr/local/lib/)
+find_library (GPIO_LIBS libpigpiod_if2.so /usr/local/lib/)
 #find_library (PTHREAD_LIBS libpthread.so.0 /lib/arm-linux-gnueabihf/) 
 find_library (GLIB_LIBS libglib-2.0.so.0 /lib/arm-linux-gnueabihf/) 
 find_library (M_LIBS libm.so.6 /lib/arm-linux-gnueabihf/) 
@@ -94,6 +94,7 @@ add_executable(
 	ScriptEngine.cpp
 	PythonApi.cpp
 	PythonBinding.cpp
+	Mapper.cpp
 )
 
 target_link_libraries(

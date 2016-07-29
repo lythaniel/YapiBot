@@ -47,6 +47,10 @@ private:
 	int toInt (char * buff);
 	float toFloat (char * buff);
 
+	int m_Pi;
+
+	int m_EncCallbackId[4];
+
 	int m_LeftSpeed;
 	int m_RightSpeed;
 	int m_CamPos;

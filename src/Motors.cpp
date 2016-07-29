@@ -1,4 +1,4 @@
-#include <pigpio.h>
+#include <pigpiod_if2.h>
 #include <cstdlib>
 #include "Motors.h"
 #include "Network.h"
@@ -29,12 +29,12 @@
 
 #define SPEED_MOV_AVG 5
 
-static void GpioCbL (int gpio, int level, unsigned int tick, void * user)
+static void GpioCbL (int pi, unsigned int gpio, unsigned int level, unsigned int tick, void * user)
 {
 	CMotors * motor = (CMotors *) user;
 	motor->EncoderCbLeft (gpio, level, tick);
 }
-static void GpioCbR (int gpio, int level, unsigned int tick, void * user)
+static void GpioCbR (int pi, unsigned int gpio, unsigned int level, unsigned int tick, void * user)
 {
 	CMotors * motor = (CMotors *) user;
 	motor->EncoderCbRight (gpio, level, tick);
@@ -61,46 +61,96 @@ m_SpeedConv(SPEED_CONV),
 m_SpeedErrGain(SPEED_ERROR_GAIN),
 m_AccErrGain(ACC_ERROR_GAIN)
 {
+	int ret = 0;
 #ifdef MOTORS_CONTROL
-	gpioInitialise();
-	gpioSetMode (PWM_GPIO_R_PWM,PI_OUTPUT);
-	gpioSetMode (PWM_GPIO_R_FW,PI_OUTPUT);
-	gpioSetMode (PWM_GPIO_R_RE,PI_OUTPUT);
+	m_Pi = pigpio_start(NULL,NULL); //local gpio
+	if (m_Pi < 0)
+	{
+		fprintf(stderr, "[GPIO] Error could not initialize  (pi = %d", m_Pi);
+		return;
+	}
+	ret += set_mode (m_Pi, PWM_GPIO_R_PWM,PI_OUTPUT);
+	ret += set_mode (m_Pi, PWM_GPIO_R_FW,PI_OUTPUT);
+	ret += set_mode (m_Pi, PWM_GPIO_R_RE,PI_OUTPUT);
 
-	gpioSetMode (PWM_GPIO_L_PWM,PI_OUTPUT);
-	gpioSetMode (PWM_GPIO_L_FW,PI_OUTPUT);
-	gpioSetMode (PWM_GPIO_L_RE,PI_OUTPUT);
+	ret += set_mode (m_Pi, PWM_GPIO_L_PWM,PI_OUTPUT);
+	ret += set_mode (m_Pi, PWM_GPIO_L_FW,PI_OUTPUT);
+	ret += set_mode (m_Pi, PWM_GPIO_L_RE,PI_OUTPUT);
 
-	gpioSetPWMfrequency(PWM_GPIO_R_PWM, 100);
-	gpioSetPWMfrequency(PWM_GPIO_L_PWM, 100);
+	ret += set_mode (m_Pi, PWM_GPIO_CAM,PI_OUTPUT);
 
-	gpioSetPWMrange (PWM_GPIO_R_PWM,100);
-	gpioSetPWMrange (PWM_GPIO_L_PWM,100);
+	if (ret != 0)
+	{
+		fprintf(stderr, "[GPIO] Set mode failed");
+		return;
+	}
 
-	gpioWrite(PWM_GPIO_R_FW, 0);
-	gpioWrite(PWM_GPIO_R_RE, 0);
-	gpioWrite(PWM_GPIO_L_FW, 0);
-	gpioWrite(PWM_GPIO_L_RE, 0);
-	gpioPWM (PWM_GPIO_R_PWM,100);
-	gpioPWM (PWM_GPIO_L_PWM,100);
+	ret = set_PWM_frequency (m_Pi, PWM_GPIO_R_PWM, 100);
+	if (ret < 0)
+	{
+		fprintf(stderr, "[GPIO] Set PWM frequency failed");
+		return;
+	}
+	else if (ret != 100)
+	{
+		fprintf(stderr, "[GPIO] Warning PWM frequency different from requested (freq = %d)",ret);
+	}
+	ret = set_PWM_frequency (m_Pi, PWM_GPIO_L_PWM, 100);
+	if (ret < 0)
+	{
+		fprintf(stderr, "[GPIO] Set PWM frequency failed");
+		return;
+	}
+	else if (ret != 100)
+	{
+		fprintf(stderr, "[GPIO] Warning PWM frequency different from requested (freq = %d)",ret);
+	}
 
-	gpioSetMode (PWM_GPIO_CAM,PI_OUTPUT);
-	gpioServo(PWM_GPIO_CAM, 1450);
 
-	gpioSetMode(ROTENC_GPIO_LA, PI_INPUT);
-	gpioSetMode(ROTENC_GPIO_LB, PI_INPUT);
-	gpioSetMode(ROTENC_GPIO_RA, PI_INPUT);
-	gpioSetMode(ROTENC_GPIO_RB, PI_INPUT);
+	ret = set_PWM_range (m_Pi, PWM_GPIO_R_PWM,100);
+	ret += set_PWM_range (m_Pi, PWM_GPIO_L_PWM,100);
+	if (ret != 0)
+	{
+		fprintf(stderr, "[GPIO] Set PWM range failed");
+		return;
+	}
 
-	gpioSetPullUpDown(ROTENC_GPIO_LA, PI_PUD_UP);
-	gpioSetPullUpDown(ROTENC_GPIO_LB, PI_PUD_UP);
-	gpioSetPullUpDown(ROTENC_GPIO_RA, PI_PUD_UP);
-	gpioSetPullUpDown(ROTENC_GPIO_RB, PI_PUD_UP);
+	gpio_write(m_Pi, PWM_GPIO_R_FW, 0);
+	gpio_write(m_Pi, PWM_GPIO_R_RE, 0);
+	gpio_write(m_Pi, PWM_GPIO_L_FW, 0);
+	gpio_write(m_Pi, PWM_GPIO_L_RE, 0);
 
-	gpioSetAlertFuncEx(ROTENC_GPIO_LA, GpioCbL, (void *)this);
-	gpioSetAlertFuncEx(ROTENC_GPIO_LB, GpioCbL, (void *)this);
-	gpioSetAlertFuncEx(ROTENC_GPIO_RA, GpioCbR, (void *)this);
-	gpioSetAlertFuncEx(ROTENC_GPIO_RB, GpioCbR, (void *)this);
+
+	set_PWM_dutycycle (m_Pi, PWM_GPIO_R_PWM,100);
+	set_PWM_dutycycle (m_Pi, PWM_GPIO_L_PWM,100);
+
+
+	set_servo_pulsewidth (m_Pi, PWM_GPIO_CAM, 1450);
+
+	ret  = set_mode (m_Pi, ROTENC_GPIO_LA, PI_INPUT);
+	ret += set_mode (m_Pi, ROTENC_GPIO_LB, PI_INPUT);
+	ret += set_mode (m_Pi, ROTENC_GPIO_RA, PI_INPUT);
+	ret += set_mode (m_Pi, ROTENC_GPIO_RB, PI_INPUT);
+	if (ret != 0)
+	{
+		fprintf(stderr, "[GPIO] Set mode failed for encoders input");
+		return;
+	}
+
+	ret += set_pull_up_down(m_Pi, ROTENC_GPIO_LA, PI_PUD_UP);
+	ret += set_pull_up_down(m_Pi, ROTENC_GPIO_LB, PI_PUD_UP);
+	ret += set_pull_up_down(m_Pi, ROTENC_GPIO_RA, PI_PUD_UP);
+	ret += set_pull_up_down(m_Pi, ROTENC_GPIO_RB, PI_PUD_UP);
+	if (ret != 0)
+	{
+		fprintf(stderr, "[GPIO] Set pull up failed");
+		return;
+	}
+
+	m_EncCallbackId[0] = callback_ex(m_Pi, ROTENC_GPIO_LA, EITHER_EDGE, GpioCbL, (void *)this);
+	m_EncCallbackId[1] = callback_ex(m_Pi, ROTENC_GPIO_LB, EITHER_EDGE, GpioCbL, (void *)this);
+	m_EncCallbackId[2] = callback_ex(m_Pi, ROTENC_GPIO_RA, EITHER_EDGE, GpioCbR, (void *)this);
+	m_EncCallbackId[3] = callback_ex(m_Pi, ROTENC_GPIO_RB, EITHER_EDGE, GpioCbR, (void *)this);
 
 	m_Thread = new CThread ();
 	m_Thread->regThreadProcess(this, &CMotors::run);
@@ -111,20 +161,21 @@ m_AccErrGain(ACC_ERROR_GAIN)
 CMotors::~CMotors ()
 {
 #ifdef MOTORS_CONTROL
-	gpioWrite(PWM_GPIO_R_FW, 0);
-	gpioWrite(PWM_GPIO_R_RE, 0);
-	gpioWrite(PWM_GPIO_L_FW, 0);
-	gpioWrite(PWM_GPIO_L_RE, 0);
-	gpioPWM (PWM_GPIO_R_PWM,100);
-	gpioPWM (PWM_GPIO_L_PWM,100);
-	gpioServo(PWM_GPIO_CAM, 1450);
+	gpio_write (m_Pi, PWM_GPIO_R_FW, 0);
+	gpio_write (m_Pi, PWM_GPIO_R_RE, 0);
+	gpio_write (m_Pi, PWM_GPIO_L_FW, 0);
+	gpio_write (m_Pi, PWM_GPIO_L_RE, 0);
+	set_PWM_dutycycle (m_Pi, PWM_GPIO_R_PWM,100);
+	set_PWM_dutycycle (m_Pi, PWM_GPIO_L_PWM,100);
+	set_servo_pulsewidth (m_Pi, PWM_GPIO_CAM, 1450);
 
-	gpioSetAlertFunc(ROTENC_GPIO_LA, NULL);
-	gpioSetAlertFunc(ROTENC_GPIO_LB, NULL);
-	gpioSetAlertFunc(ROTENC_GPIO_RA, NULL);
-	gpioSetAlertFunc(ROTENC_GPIO_RB, NULL);
 
-	gpioTerminate();
+	callback_cancel(m_EncCallbackId[0]);
+	callback_cancel(m_EncCallbackId[1]);
+	callback_cancel(m_EncCallbackId[2]);
+	callback_cancel(m_EncCallbackId[3]);
+
+	pigpio_stop(m_Pi);
 #endif
 }
 
@@ -176,9 +227,9 @@ void CMotors::ctrlLeftSpeed (int speed)
 #ifdef MOTORS_CONTROL
 	if (abs(speed) <= 10)
 	{
-		gpioWrite(PWM_GPIO_L_FW, 1);
-		gpioWrite(PWM_GPIO_L_RE, 1);
-		gpioPWM (PWM_GPIO_L_PWM,99);
+		gpio_write (m_Pi, PWM_GPIO_L_FW, 1);
+		gpio_write (m_Pi, PWM_GPIO_L_RE, 1);
+		set_PWM_dutycycle (m_Pi, PWM_GPIO_L_PWM,99);
 
 	}
 	else
@@ -186,22 +237,22 @@ void CMotors::ctrlLeftSpeed (int speed)
 
 		if (speed > 0)
 		{
-			gpioWrite(PWM_GPIO_L_FW, 1);
-			gpioWrite(PWM_GPIO_L_RE, 0);
+			gpio_write (m_Pi, PWM_GPIO_L_FW, 1);
+			gpio_write (m_Pi, PWM_GPIO_L_RE, 0);
 
 
 		}
 		else
 		{
-			gpioWrite(PWM_GPIO_L_FW, 0);
-			gpioWrite(PWM_GPIO_L_RE, 1);
+			gpio_write (m_Pi, PWM_GPIO_L_FW, 0);
+			gpio_write (m_Pi, PWM_GPIO_L_RE, 1);
 		}
 		speed = abs(speed);
 		if (speed > 100)
 		{
 				speed = 100;
 		}
-		gpioPWM (PWM_GPIO_L_PWM,speed);
+		set_PWM_dutycycle (m_Pi, PWM_GPIO_L_PWM,speed);
 	}
 #endif
 }
@@ -212,9 +263,9 @@ void CMotors::ctrlRightSpeed (int speed)
 #ifdef MOTORS_CONTROL
 	if (abs(speed) <= 10)
 	{
-		gpioWrite(PWM_GPIO_R_FW, 1);
-		gpioWrite(PWM_GPIO_R_RE, 1);
-		gpioPWM (PWM_GPIO_R_PWM,99);
+		gpio_write (m_Pi, PWM_GPIO_R_FW, 1);
+		gpio_write (m_Pi, PWM_GPIO_R_RE, 1);
+		set_PWM_dutycycle (m_Pi, PWM_GPIO_R_PWM,99);
 
 	}
 	else
@@ -222,20 +273,20 @@ void CMotors::ctrlRightSpeed (int speed)
 
 		if (speed > 0)
 		{
-			gpioWrite(PWM_GPIO_R_FW, 1);
-			gpioWrite(PWM_GPIO_R_RE, 0);
+			gpio_write (m_Pi, PWM_GPIO_R_FW, 1);
+			gpio_write (m_Pi, PWM_GPIO_R_RE, 0);
 		}
 		else
 		{
-			gpioWrite(PWM_GPIO_R_FW, 0);
-			gpioWrite(PWM_GPIO_R_RE, 1);
+			gpio_write (m_Pi, PWM_GPIO_R_FW, 0);
+			gpio_write (m_Pi, PWM_GPIO_R_RE, 1);
 		}
 		speed = abs(speed);
 		if (speed > 100)
 		{
 				speed = 100;
 		}
-		gpioPWM (PWM_GPIO_R_PWM,speed);
+		set_PWM_dutycycle (m_Pi, PWM_GPIO_R_PWM,speed);
 	}
 #endif
 	}
@@ -249,7 +300,7 @@ void CMotors::moveCam (int pos)
 	int servpos = (pos * 130) / 10;
 	servpos += 800;
 #ifdef MOTORS_CONTROL
-	gpioServo(PWM_GPIO_CAM, servpos);
+	set_servo_pulsewidth (m_Pi, PWM_GPIO_CAM, servpos);
 #endif
 	m_Lock.get();
 	m_CamPos = pos;
