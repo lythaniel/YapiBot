@@ -75,7 +75,7 @@ typedef enum _PyBindGenWrapperFlags {
 #endif
 
 
-#include "../src/PythonApi.h"
+#include "PythonApi.h"
 /* --- forward declarations --- */
 
 

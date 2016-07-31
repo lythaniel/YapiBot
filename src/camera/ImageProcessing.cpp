@@ -83,6 +83,7 @@ void CImageProcessing::VideoProcThread (void *)
 
 		if(m_pCamera->BeginReadFrame(0,(const void  * *)&framedata,(int *)&framesz))
 		{
+			//printf ("Camera frame readed\n");
 #if 0
 			//if doing argb conversion the frame data will be exactly the right size so just set directly
 			//Mat img (frame_sz,CV_8UC1,frame_data);

@@ -16,13 +16,14 @@ extern "C" {
 }
 
 #include <QLabel>
+#include "VideoProcessing.h"
 
 
 class VideoWidget : public QObject
 {
     Q_OBJECT
 public:
-    explicit VideoWidget(QLabel* pView);
+    explicit VideoWidget(QLabel* pView, CVideoProcessing * videoproc = NULL);
 
 
 signals:
@@ -60,6 +61,8 @@ private:
     AVPacket m_Avpkt;
 
     QLabel * m_pVideoOut;
+
+    CVideoProcessing * m_pVideoProc;
 
 
 

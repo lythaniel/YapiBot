@@ -11,11 +11,15 @@
 #include <QTime>
 #include <QObject>
 
+
+
 #define SERVER "192.168.1.222"
 #define PORT 9999
 
-VideoWidget::VideoWidget(QLabel* pView) :
-m_pVideoOut (pView)
+
+VideoWidget::VideoWidget(QLabel* pView, CVideoProcessing * videoproc) :
+m_pVideoOut (pView),
+m_pVideoProc(videoproc)
  {
     //m_pVideoOut->setGeometry(0,0,640,480);
 
@@ -180,6 +184,11 @@ void VideoWidget::decodeFrame (char * pkt, int len)
                 m_pScaleCtx = sws_getCachedContext (m_pScaleCtx, m_pPicture->width, m_pPicture->height, static_cast<PixelFormat>(m_pPicture->format), m_pPicture->width, m_pPicture->height, PIX_FMT_RGB24, SWS_BILINEAR, NULL, NULL, NULL);
             }
             sws_scale(m_pScaleCtx, m_pPicture->data, m_pPicture->linesize, 0, m_pPicture->height, m_pRgbPic->data, m_pRgbPic->linesize);
+
+            if (m_pVideoProc != NULL)
+            {
+                  m_pVideoProc->process((void*) m_pRgbPic->data[0], m_pPicture->height, m_pPicture->width);
+            }
             QImage img ((unsigned char *)m_pRgbPic->data[0],m_pPicture->width, m_pPicture->height,QImage::Format_RGB888);
             m_pVideoOut->setPixmap(QPixmap::fromImage(img));
 

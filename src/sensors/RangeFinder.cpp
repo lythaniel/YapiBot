@@ -42,7 +42,7 @@ int CRangeFinder::getRange(void)
 		readout = (buff[0] << 8) + (buff[1]);
 		//printf ("Rangefinder readout: %d, confreg 0x%x\n",readout,buff[2]);
 		range = (490512 / (readout - 508)) - 4;
-		//range = readout;
+		//printf ("Rangefinder readout: %d, range %d\n",readout,range);
 	}
 	return range;
 }

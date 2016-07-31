@@ -109,11 +109,11 @@ m_AccErrGain(ACC_ERROR_GAIN)
 
 	ret = set_PWM_range (m_Pi, PWM_GPIO_R_PWM,100);
 	ret += set_PWM_range (m_Pi, PWM_GPIO_L_PWM,100);
-	if (ret != 0)
+	/*if (ret != 0)
 	{
 		fprintf(stderr, "[GPIO] Set PWM range failed");
 		return;
-	}
+	}*/
 
 	gpio_write(m_Pi, PWM_GPIO_R_FW, 0);
 	gpio_write(m_Pi, PWM_GPIO_R_RE, 0);

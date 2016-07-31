@@ -5,7 +5,7 @@
  *      Author: lythaniel
  */
 
-#include "Compass.h"
+#include "Compass_HMC5883L.h"
 
 #include <math.h>
 
@@ -26,11 +26,10 @@
 #define max(X,Y) (X>Y)?X:Y
 #define min(X,Y) (X<Y)?X:Y
 
-float CCompass::ScaleTable [8] = {0.73, 0.92, 1.22, 1.52, 2.27, 2.56, 3.03, 4.35};
+float CCompass_HMC5883L::ScaleTable [8] = {0.73, 0.92, 1.22, 1.52, 2.27, 2.56, 3.03, 4.35};
 
-CCompass::CCompass() :
+CCompass_HMC5883L::CCompass_HMC5883L() :
 m_Scale (4),
-m_I2Cbus (NULL),
 m_MaxX(-4000),
 m_MaxY(-4000),
 m_MaxZ(-4000),
@@ -45,7 +44,7 @@ m_AvgZ(0)
 }
 
 
-void CCompass::setI2Cbus (CI2Cbus * i2c)
+void CCompass_HMC5883L::setBus (CI2Cbus * i2c)
 {
 
 	m_I2Cbus = i2c;
@@ -54,11 +53,11 @@ void CCompass::setI2Cbus (CI2Cbus * i2c)
 	writeReg(MODE_REG, MODE_MES_CONT); //8 average, 15Hz default, normal measurement.
 }
 
-CCompass::~CCompass() {
+CCompass_HMC5883L::~CCompass_HMC5883L() {
 
 }
 
-void CCompass::writeReg (char regadd, char value)
+void CCompass_HMC5883L::writeReg (char regadd, char value)
 {
 	char buff[2];
 	buff[0] = regadd,
@@ -66,7 +65,7 @@ void CCompass::writeReg (char regadd, char value)
 	m_I2Cbus->write(HMC5883L_I2C_ADD,buff, 2);
 }
 
-float CCompass::getHeading (void)
+float CCompass_HMC5883L::getHeading (void)
 {
 	float heading = 0;
 	char address = DATA_REG;
@@ -77,7 +76,7 @@ float CCompass::getHeading (void)
 	{
 		return 0;
 	}
-	//if (1 == m_I2Cbus->write (HMC5883L_I2C_ADD,&address, 1))
+	if (1 == m_I2Cbus->write (HMC5883L_I2C_ADD,&address, 1))
 	{
 
 		if (6 == m_I2Cbus->read(HMC5883L_I2C_ADD, buffer,6))

@@ -33,6 +33,7 @@ public:
 		CTRL_STATE_ALIGN_BEARING,
 		CTRL_STATE_MOVE_BEARING,
 		CTRL_STATE_ROTATE,
+		CTRL_STATE_REFRESH_MAP
 	} ctrlState_t;
 
 	void compassCalibration (void);
@@ -40,6 +41,7 @@ public:
 	void alignBearing (int bearing);
 	void moveBearing (int bearing, int distance);
 	void rotate (int rot);
+	void refreshMap (void);
 
 	void EventCallback (Event_t evt, int data1, void * data2);
 
@@ -61,6 +63,7 @@ private:
 	void runAlignBearing (YapiBotStatus_t status);
 	void runMoveBearing (YapiBotStatus_t status);
 	void runRotate (YapiBotStatus_t status);
+	void runRefreshMap (YapiBotStatus_t status);
 
 	CThread * m_Thread;
 
@@ -79,6 +82,8 @@ private:
 	unsigned int m_BearingErrGain;
 	unsigned int m_BearingErrLim;
 	unsigned int m_BearingGoodCntLim;
+
+	YapiBotStatus_t m_Status;
 
 	CMutex m_Lock;
 

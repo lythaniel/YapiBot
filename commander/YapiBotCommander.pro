@@ -15,12 +15,16 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     videowidget.cpp \
-    touchpad.cpp
+    touchpad.cpp \
+    VideoProcessing.cpp \
+    map.cpp
 
 HEADERS  += mainwindow.h \
     videowidget.h \
-    touchpad.h
+    touchpad.h \
+    VideoProcessing.h \
+    map.h
 
 FORMS    += mainwindow.ui
 
-LIBS += -lvlc-qt -lvlc-qt-widgets -lavcodec -lavutil -lswscale
+LIBS += -lvlc-qt -lvlc-qt-widgets -lavcodec -lavutil -lswscale -lopencv_core -lopencv_imgproc

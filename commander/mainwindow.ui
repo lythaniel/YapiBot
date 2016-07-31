@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1005</width>
-    <height>591</height>
+    <width>1467</width>
+    <height>598</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -358,13 +358,36 @@
      </rect>
     </property>
    </widget>
+   <widget class="Map" name="uiMap" native="true">
+    <property name="geometry">
+     <rect>
+      <x>1050</x>
+      <y>50</y>
+      <width>400</width>
+      <height>400</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="refreshMap">
+    <property name="geometry">
+     <rect>
+      <x>730</x>
+      <y>500</y>
+      <width>111</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>refresh Map</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1005</width>
+     <width>1467</width>
      <height>25</height>
     </rect>
    </property>
@@ -385,6 +408,12 @@
    <class>TouchPad</class>
    <extends>QWidget</extends>
    <header>touchpad.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>Map</class>
+   <extends>QWidget</extends>
+   <header>map.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

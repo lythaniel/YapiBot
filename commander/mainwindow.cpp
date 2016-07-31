@@ -5,6 +5,9 @@
 #include "touchpad.h"
 #include <QInputDialog>
 #include "QtCore/qmath.h"
+#include "map.h"
+
+
 #define CMDSERVER "192.168.1.222"
 #define CMDPORT 9998
 
@@ -49,7 +52,8 @@ MainWindow::MainWindow(QWidget *parent) :
     QVBoxLayout * layout = new QVBoxLayout();
 
     ui->setupUi(this);
-    VideoWidget * stream = new VideoWidget(ui->VideoView);
+    m_pVideoProc = new CVideoProcessing();
+    m_pVideo = new VideoWidget(ui->VideoView, m_pVideoProc);
     TouchPad * tp = ui->touchPad;
     m_Speed = 100;
 
@@ -73,7 +77,10 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     sendCommand (CmdMoveStop);
+    delete m_pVideo;
+    delete m_pVideoProc;
     delete ui;
+
 }
 
 void MainWindow::fromInt (char * buff, int val)
@@ -169,7 +176,8 @@ void MainWindow::cmdPktReceived()
     QByteArray buff = m_CmdSocket->readAll();
     int size = buff.size();
     unsigned char * cbuff = (unsigned char *)buff.data();
-    while (size >= 1)
+    unsigned char * mapbuffer;
+    while (size >= 4)
     {
         int id = toInt(&cbuff[0]);
         if ((unsigned int)id == YAPIBOT_STATUS)
@@ -214,6 +222,35 @@ void MainWindow::cmdPktReceived()
             }
             cbuff+=12;
             size -= 12;
+        }
+        else if ((unsigned int)id == YAPIBOT_MAP)
+        {
+            unsigned int sz = toInt(&cbuff[4]);
+            unsigned int sz_to_copy = sz * sz;
+            unsigned int copy_sz;
+            unsigned int copy_idx = 0;
+            mapbuffer = new unsigned char [sz_to_copy];
+            cbuff += 8;
+            size -= 8;
+            do
+            {
+                copy_sz = size>=sz_to_copy?sz_to_copy:size;
+                memcpy (&mapbuffer[copy_idx],cbuff,copy_sz);
+                copy_idx += copy_sz;
+                cbuff += copy_sz;
+                size -= copy_sz;
+                sz_to_copy -= copy_sz;
+                if (size <= 0)
+                {
+                    buff = m_CmdSocket->readAll();
+                    size = buff.size();
+                    cbuff = (unsigned char *)buff.data();
+                }
+            } while (sz_to_copy > 0);
+
+            Map * map = ui->uiMap;
+            map->updateMap (sz, sz, mapbuffer);
+
         }
         else
         {
@@ -408,3 +445,8 @@ void MainWindow::on_paramval_valueChanged(double arg1)
        }
 }
 
+
+void MainWindow::on_refreshMap_clicked()
+{
+    sendCommand(CmdRefrehMap);
+}

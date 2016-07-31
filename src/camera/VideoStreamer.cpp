@@ -30,6 +30,7 @@ CVideoStreamer::~CVideoStreamer() {
 
 void CVideoStreamer::cb (uint8_t * buff, uint32_t size )
 {
+	//printf ("Send video packet\n");
 	CNetwork::getInstance()->sendVideoPacket(buff, size);
 }
 
@@ -66,5 +67,6 @@ void CVideoStreamer::Networkcb (Event_t evt, int data1, void * data2)
 
 void CVideoStreamer::streamFrame (uint8_t * frame, uint32_t size)
 {
+	//printf ("encode video packet\n");
 	m_pEncoder->encode (frame,size);
 }

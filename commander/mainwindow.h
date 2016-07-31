@@ -5,7 +5,8 @@
 #include <QtNetwork>
 #include <QTcpServer>
 #include "../src/YapiBotCmd.h"
-
+#include "VideoProcessing.h"
+#include "videowidget.h"
 
 
 namespace Ui {
@@ -65,6 +66,8 @@ private slots:
     void on_paramval_valueChanged(double arg1);
 
 
+    void on_refreshMap_clicked();
+
 private:
 
     void sendCommand (YapiBotCmd_t cmd, char * payload = NULL, unsigned int pldsize = 0);
@@ -79,7 +82,9 @@ private:
     bool m_Connected;
     QTcpSocket * m_CmdSocket;
     char m_CmdBuffer[256];
-     bool m_UpdateParam;
+    bool m_UpdateParam;
+    VideoWidget * m_pVideo;
+    CVideoProcessing * m_pVideoProc;
 };
 
 #endif // MAINWINDOW_H

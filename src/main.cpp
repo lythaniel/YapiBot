@@ -10,10 +10,10 @@
 #include "Semaphore.h"
 #include "Motors.h"
 #include "I2Cbus.h"
-#include "Compass.h"
-#include "RangeFinder.h"
+#include "SensorFactory.h"
 #include "EventObserver.h"
 #include "ScriptEngine.h"
+#include "Mapper.h"
 
 #define MAIN_TEXTURE_WIDTH 640
 #define MAIN_TEXTURE_HEIGHT 480
@@ -37,10 +37,21 @@ int main(int argc, const char **argv)
 	CI2Cbus i2c(1);
 
 	//Create compass
-	CCompass::getInstance()->setI2Cbus(&i2c);
+	CCompass * compass = CSensorFactory::getInstance()->createCompass(COMPASS_HMC5883L);
+	if (compass != NULL)
+	{
+		compass->setBus(&i2c);
+	}
 
 	//Create range finder
-	CRangeFinder::getInstance()->setI2Cbus(&i2c);
+	CRangeFinder * rangeFinder = CSensorFactory::getInstance()->createRangeFinder(RANGEFINDER_2Y0A21);
+	if (rangeFinder != NULL)
+	{
+		rangeFinder->setBus(&i2c);
+	}
+
+	//Create the mapper.
+	CMapper::getInstance();
 
 	//Create the motors
 	CMotors::getInstance();

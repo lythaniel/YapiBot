@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project( PoBot )
+project( YapiBot )
 SET(COMPILE_DEFINITIONS -Werror -pthread)
 find_package( OpenCV REQUIRED )
 find_package( PythonLibs REQUIRED)
@@ -33,6 +33,15 @@ include_directories(${OPT_VC}/host_applications/linux/libs/bcm_host/include)
 include_directories(${GNU_EABIHF_PATH})
 
 include_directories(${PYTHON_INCLUDE_DIRS}/)
+
+include_directories(.)
+include_directories(abstraction)
+include_directories(sensors)
+include_directories(motors)
+include_directories(camera)
+include_directories(utils)
+include_directories(control)
+include_directories(script)
 
 
 find_PATH (USR_LIBS libgtkglext-x11-1.0.so.0 /usr/lib/)
@@ -72,33 +81,34 @@ link_directories(${RPI_SYS_LIBS}/)
 #include_directories(${GLIB_INCLUDE_DIRS})
 
 add_executable(
-	PoBot 
-	PoBot.cpp
-	Camera.cpp
-	CameraControl.cpp
-	Graphics.cpp
-	Motors.cpp
-	Encoder.cpp
-	Thread.cpp
-	Network.cpp
-	Mutex.cpp
-	Semaphore.cpp
-	Controller.cpp
-	ImageProcessing.cpp
-	VideoStreamer.cpp
-	Compass.cpp
-	I2Cbus.cpp
-	Sampler.cpp
-	RangeFinder.cpp
-	EventObserver.cpp
-	ScriptEngine.cpp
-	PythonApi.cpp
-	PythonBinding.cpp
-	Mapper.cpp
+	YapiBot 
+	main.cpp
+	abstraction/Thread.cpp
+	abstraction/Network.cpp
+	abstraction/Mutex.cpp
+	abstraction/Semaphore.cpp
+	abstraction/I2Cbus.cpp
+	camera/Camera.cpp
+	camera/CameraControl.cpp
+	camera/Graphics.cpp
+	camera/ImageProcessing.cpp
+	camera/VideoStreamer.cpp
+	control/EventObserver.cpp
+	control/Mapper.cpp
+	control/Controller.cpp
+	motors/Motors.cpp
+	motors/Encoder.cpp
+	script/ScriptEngine.cpp
+	script/PythonApi.cpp
+	script/PythonBinding.cpp
+	sensors/Compass_HMC5883L.cpp
+	sensors/RangeFinder_2Y0A21.cpp
+	sensors/SensorFactory.cpp
+	utils/Sampler.cpp
 )
 
 target_link_libraries(
-	PoBot
+	YapiBot
 	${C_LIBS}
 	${GLIB_LIBS}
 rt

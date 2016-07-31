@@ -9,10 +9,10 @@
 #include "Network.h"
 #include "Motors.h"
 #include "Sampler.h"
-#include "Compass.h"
-#include "RangeFinder.h"
+#include "SensorFactory.h"
 #include "ScriptEngine.h"
 #include "ImageProcessing.h"
+#include "Mapper.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -26,6 +26,9 @@
 #define MOVE_STRAIGHT_ERR_GAIN 1
 
 #define COLLISION_MIN_DIST 15
+
+#define REFRESH_MAP_SPEED 70
+#define REFRESH_MAP_MIN_DIST
 
 CController::CController() :
 m_State(CTRL_STATE_IDLE),
@@ -41,6 +44,14 @@ m_BearingErrGain(BEARING_ERR_GAIN),
 m_BearingErrLim(BEARING_ERR_LIM),
 m_BearingGoodCntLim(BEARING_GOOD_CNT_LIMIT)
 {
+	m_Status.id = YAPIBOT_STATUS;
+	m_Status.speed_left = 0;
+	m_Status.speed_right = 0;
+	m_Status.camera_pos = 0;
+	m_Status.heading = 0;
+	m_Status.range = 0;
+	m_Status.meas_left = 0;
+	m_Status.meas_right = 0;
 	CNetwork::getInstance()->regCmdReceived(this,&CController::CmdPckReceived);
 	CEventObserver::getInstance()->registerOnEvent(EVENT_MASK_ALL,this,&CController::EventCallback);
 	m_Thread = new CThread ();
@@ -55,21 +66,21 @@ CController::~CController() {
 void CController::run(void *)
 {
 	CSampler sampler (CONTROLLER_PERIOD);
-	YapiBotStatus_t status;
-	status.id = YAPIBOT_STATUS;
+
+
 	while (1) {
 		sampler.wait();
 		CMotors * motors = CMotors::getInstance();
-		CCompass * compass = CCompass::getInstance();
-		CRangeFinder * rangeFinder = CRangeFinder::getInstance();
+		CCompass * compass = CSensorFactory::getInstance()->getCompass();
+		CRangeFinder * rangeFinder = CSensorFactory::getInstance()->getRangeFinder();
 
-		status.speed_left = motors->getLeftSpeed();
-		status.speed_right = motors->getRightSpeed();
-		status.camera_pos = motors->getCamPos();
-		status.heading = compass->getHeading();
-		status.range = rangeFinder->getRange();
-		status.meas_left = motors->getLeftMeas();
-		status.meas_right = motors->getRightMeas();
+		m_Status.speed_left = motors->getLeftSpeed();
+		m_Status.speed_right = motors->getRightSpeed();
+		m_Status.camera_pos = motors->getCamPos();
+		m_Status.heading = compass->getHeading();
+		m_Status.range = rangeFinder->getRange();
+		m_Status.meas_left = motors->getLeftMeas();
+		m_Status.meas_right = motors->getRightMeas();
 
 		m_Lock.get();
 		switch (m_State)
@@ -77,24 +88,26 @@ void CController::run(void *)
 			case CTRL_STATE_IDLE:
 				break;
 			case CTRL_STATE_COMP_CAL:
-				runCompassCalibration(status);
+				runCompassCalibration(m_Status);
 				break;
 			case CTRL_STATE_MOVE_STRAIGHT:
-				runMoveStraight(status);
+				runMoveStraight(m_Status);
 				break;
 			case CTRL_STATE_ALIGN_BEARING:
-				runAlignBearing(status);
+				runAlignBearing(m_Status);
 				break;
 			case CTRL_STATE_MOVE_BEARING:
-				runMoveBearing(status);
+				runMoveBearing(m_Status);
 				break;
 			case CTRL_STATE_ROTATE:
-				runRotate(status);
+				runRotate(m_Status);
 				break;
+			case CTRL_STATE_REFRESH_MAP:
+				runRefreshMap(m_Status);
 		}
 		m_Lock.release();
 
-		CNetwork::getInstance()->sendCmdPck ((unsigned char *)&status, sizeof(YapiBotStatus_t));
+		CNetwork::getInstance()->sendCmdPck ((unsigned char *)&m_Status, sizeof(YapiBotStatus_t));
 	}
 
 }
@@ -162,6 +175,7 @@ void CController::runCompassCalibration (YapiBotStatus_t status)
 	}
 
 }
+
 
 void CController::runRotate (YapiBotStatus_t status)
 {
@@ -312,6 +326,67 @@ void CController::runMoveBearing (YapiBotStatus_t status)
 	}
 }
 
+void CController::runRefreshMap (YapiBotStatus_t status)
+{
+	//We need to do a complete loop and update the mapper with every new angle / distance detected.
+	m_DistMovedLeft += CMotors::getInstance()->getLeftDist();
+	m_DistMovedRight += CMotors::getInstance()->getRightDist();
+
+	//Update the map
+	CMapper::getInstance()->update(status.heading, status.range);
+
+	//check if we at least turned half a turn before trying to align on the saved bearing
+	if (m_DistMovedRight <  2500)
+	{
+		CMotors::getInstance()->move (0,REFRESH_MAP_SPEED);
+	}
+	else
+	{
+
+		int err = status.heading - m_RequestedBearing;
+		if (err > 180)
+		{
+			err -= 360;
+		}
+		if (err < -180)
+		{
+			err += 360;
+		}
+
+		fprintf(stdout,"Aligning to %d current = %d\n", m_RequestedBearing, err);
+
+
+		if (abs(err) < m_BearingErrLim)
+		{
+			m_BearingGoodCnt++;
+		}
+		else
+		{
+			m_BearingGoodCnt = 0;
+		}
+		if (m_BearingGoodCnt >= m_BearingGoodCntLim)
+		{
+			m_State = CTRL_STATE_IDLE;
+			CMotors::getInstance()->move (0,0);
+			fprintf(stdout,"Map refresh complete !\n");
+			//Ask the mapper to send the map.
+			CMapper::getInstance()->sendMap();
+			CEventObserver::getInstance()->notify(CtrlMoveComplete);
+		}
+		else
+		{
+			err = err * m_BearingErrGain;
+			if (err > REFRESH_MAP_SPEED)
+				err = REFRESH_MAP_SPEED;
+			else if (err < -REFRESH_MAP_SPEED)
+				err = -REFRESH_MAP_SPEED;
+
+			CMotors::getInstance()->move (0,err);
+		}
+	}
+}
+
+
 void CController::compassCalibration (void)
 {
 	m_Lock.get();
@@ -325,8 +400,8 @@ void CController::compassCalibration (void)
 	m_DistMovedRight = 0;
 
 	m_RequestedBearing = 0;
-	m_ReqLeftMov = -10000;
-	m_ReqRightMov = 10000;
+	m_ReqLeftMov = -5000;
+	m_ReqRightMov = 5000;
 
 	CMotors::getInstance()->resetDist();
 
@@ -421,7 +496,27 @@ void CController::rotate (int rot)
 
 	m_Lock.release();
 }
+void CController::refreshMap (void)
+{
+	m_Lock.get();
+	if (m_State != CTRL_STATE_IDLE)
+	{
+		CEventObserver::getInstance()->notify(CtrlMoveCancel);
+		CMotors::getInstance()->move (0,0);
+	}
 
+	m_DistMovedLeft = 0;
+	m_DistMovedRight = 0;
+	m_RequestedBearing = m_Status.heading;
+
+
+	CMotors::getInstance()->resetDist();
+
+	m_State = CTRL_STATE_REFRESH_MAP;
+
+
+	m_Lock.release();
+}
 
 void CController::CmdPckReceived (char * buffer, unsigned int size) {
 	YapiBotCmd_t cmd;
@@ -573,6 +668,9 @@ void CController::processCmd (YapiBotCmd_t cmd, char * buffer, unsigned int size
 	case CmdRotate:
 			dist = toInt (&buffer[0]);
 			rotate(dist);
+			break;
+	case CmdRefrehMap:
+			refreshMap();
 			break;
 	default:
 		fprintf(stderr,"Unknown command received !!!\n");

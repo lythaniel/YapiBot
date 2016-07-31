@@ -35,6 +35,7 @@ typedef enum {
 	CmdAlignBearing = CMD_TYPE_CMD | 2,
 	CmdMoveBearing = CMD_TYPE_CMD | 3,
 	CmdRotate = CMD_TYPE_CMD | 4,
+	CmdRefrehMap = CMD_TYPE_CMD | 5,
 	CmdSetParam = CMD_TYPE_PARAM | 0,
 	CmdGetParam = CMD_TYPE_PARAM | 1,
 } YapiBotCmd_t;
@@ -62,11 +63,13 @@ typedef enum {
 typedef enum
 {
 	InfoStatus = 0xDEADBEEF,
+	InfoMap = 0xBAADAA55,
 	InfoParam = 0x00000
 } YapiBotInfo_t;
 
 #define YAPIBOT_STATUS 0xDEADBEFF
 #define YAPIBOT_PARAM 0x0000000
+#define YAPIBOT_MAP 0xBAADAA55
 
 typedef struct {
 	int id;
