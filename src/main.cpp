@@ -37,7 +37,7 @@ int main(int argc, const char **argv)
 	CI2Cbus i2c(1);
 
 	//Create compass
-	CCompass * compass = CSensorFactory::getInstance()->createCompass(COMPASS_HMC5883L);
+	CCompass * compass = CSensorFactory::getInstance()->createCompass(COMPASS_LSM9DS1);
 	if (compass != NULL)
 	{
 		compass->setBus(&i2c);

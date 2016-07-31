@@ -15,7 +15,8 @@
 
 typedef enum
 {
-	COMPASS_HMC5883L
+	COMPASS_HMC5883L,
+	COMPASS_LSM9DS1
 } eCompassType;
 
 typedef enum

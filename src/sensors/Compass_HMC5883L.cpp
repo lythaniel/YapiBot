@@ -59,7 +59,7 @@ CCompass_HMC5883L::~CCompass_HMC5883L() {
 
 void CCompass_HMC5883L::writeReg (char regadd, char value)
 {
-	char buff[2];
+	unsigned char buff[2];
 	buff[0] = regadd,
 	buff[1] = value;
 	m_I2Cbus->write(HMC5883L_I2C_ADD,buff, 2);
@@ -68,8 +68,8 @@ void CCompass_HMC5883L::writeReg (char regadd, char value)
 float CCompass_HMC5883L::getHeading (void)
 {
 	float heading = 0;
-	char address = DATA_REG;
-	char buffer [6];
+	unsigned char address = DATA_REG;
+	unsigned char buffer [6];
 	short sx, sy, sz;
 	float fx,fy,fz;
 	if (m_I2Cbus == NULL)

@@ -21,7 +21,7 @@ CRangeFinder_2Y0A21::~CRangeFinder_2Y0A21()
 
 void CRangeFinder_2Y0A21::setBus (CI2Cbus * bus)
 {
-	char confreg = (0x01 << 5) | (1 << 4) | (0x2 << 2) | (0x00); //Channel 2 / Continuous mode / 15 SPS(16bits) / x1
+	unsigned char confreg = (0x01 << 5) | (1 << 4) | (0x2 << 2) | (0x00); //Channel 2 / Continuous mode / 15 SPS(16bits) / x1
 	if (bus != NULL)
 	{
 		m_I2Cbus = bus;
@@ -34,7 +34,7 @@ int CRangeFinder_2Y0A21::getRange(void)
 	int range = -1;
 	int readout;
 	float frng;
-	char buff[3];
+	unsigned char buff[3];
 	if (m_I2Cbus)
 	{
 		m_I2Cbus->read(ADC_I2C_ADD, buff, 3);

@@ -13,8 +13,10 @@ public:
 	CI2Cbus(int bus);
 	~CI2Cbus();
 
-	int write (char add, char * buff, unsigned int size);
-	int read (char add, char * buff, unsigned int size);
+	int write (char add, unsigned char * buff, unsigned int size);
+	int read (char add, unsigned char* buff, unsigned int size);
+	int write (char add, unsigned char subAdd,  unsigned char * buff, unsigned int size);
+	int read (char add, unsigned char subAdd,  unsigned char * buff, unsigned int size);
 
 private:
 	int m_Handle;

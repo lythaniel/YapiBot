@@ -7,6 +7,7 @@
 
 #include <SensorFactory.h>
 #include "Compass_HMC5883L.h"
+#include "Compass_LSM9DS1.h"
 #include "RangeFinder_2Y0A21.h"
 
 CSensorFactory::CSensorFactory() :
@@ -37,6 +38,9 @@ CCompass * CSensorFactory::createCompass (eCompassType type)
 		{
 		case COMPASS_HMC5883L:
 			m_Compass = new CCompass_HMC5883L();
+			break;
+		case COMPASS_LSM9DS1:
+			m_Compass = new CCompass_LSM9DS1();
 			break;
 		default:
 			fprintf (stderr, "[SENSORS] Impossible to create unknown compass type");
