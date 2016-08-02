@@ -16,10 +16,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define CONTROLLER_PERIOD 250
+#define CONTROLLER_PERIOD 200
 
-#define BEARING_ERR_GAIN 5
-#define BEARING_ERR_LIM 4
+#define BEARING_ERR_GAIN 4
+#define BEARING_ERR_LIM 6
 #define BEARING_GOOD_CNT_LIMIT 3
 #define BEARING_ERR_CLIP 200
 

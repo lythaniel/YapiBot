@@ -49,7 +49,7 @@
 #define min(X,Y) (X<Y)?X:Y
 
 //LSM9DS1 MAG CONFIGURATION
-#define CTRL_REG1_M_VAL		 	0xF4 //TEMP_COMP on, x/y ultra high perf, rate = 20Hz, FAST_ODR off, Self test off
+#define CTRL_REG1_M_VAL		 	0xEC //TEMP_COMP on, x/y ultra high perf, rate = 5Hz, FAST_ODR off, Self test off
 #define CTRL_REG2_M_VAL		 	0x00 //Full scale = 4 gauss, Reboot off, Soft reset off
 #define CTRL_REG3_M_VAL		 	0x00 //I2C enable, Low power off, SPI enable, continuous mode
 #define CTRL_REG4_M_VAL		 	0xC0 //z ultra high perf, lsb at lower address.
@@ -143,7 +143,7 @@ float CCompass_LSM9DS1::getHeading (void)
 		if (heading > 2 * PI) heading -= 2 * PI;
 		heading *= RAD_TO_DEG;
 
-		printf ("compass read out: X: %f/%f/%f/%f | : Y: %f/%f/%f/%f,  heading: %f\n",fx,m_MaxX, m_MinX, m_AvgX, fy,m_MaxY, m_MinY, m_AvgY, heading);
+		//printf ("compass read out: X: %f/%f/%f/%f | : Y: %f/%f/%f/%f,  heading: %f\n",fx,m_MaxX, m_MinX, m_AvgX, fy,m_MaxY, m_MinY, m_AvgY, heading);
 
 	}
 

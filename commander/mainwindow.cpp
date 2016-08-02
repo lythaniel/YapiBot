@@ -5,6 +5,10 @@
 #include "touchpad.h"
 #include <QInputDialog>
 #include "QtCore/qmath.h"
+#include <qlayout.h>
+#include <qwt_compass.h>
+#include <qwt_compass_rose.h>
+#include <qwt_dial_needle.h>
 #include "map.h"
 
 
@@ -50,6 +54,7 @@ MainWindow::MainWindow(QWidget *parent) :
     m_Connected(false)
 {
     QVBoxLayout * layout = new QVBoxLayout();
+    QPalette palette0;
 
     ui->setupUi(this);
     m_pVideoProc = new CVideoProcessing();
@@ -69,6 +74,48 @@ MainWindow::MainWindow(QWidget *parent) :
     }
     m_UpdateParam = false;
 
+
+
+
+    QwtCompassScaleDraw *scaleDraw = new QwtCompassScaleDraw();
+    scaleDraw->enableComponent( QwtAbstractScaleDraw::Ticks, true );
+    scaleDraw->enableComponent( QwtAbstractScaleDraw::Labels, true );
+    scaleDraw->enableComponent( QwtAbstractScaleDraw::Backbone, false );
+    scaleDraw->setTickLength( QwtScaleDiv::MinorTick, 1 );
+    scaleDraw->setTickLength( QwtScaleDiv::MediumTick, 1 );
+    scaleDraw->setTickLength( QwtScaleDiv::MajorTick, 3 );
+
+    ui->Compass->setScaleDraw( scaleDraw );
+
+    ui->Compass->setScaleMaxMajor( 36 );
+    ui->Compass->setScaleMaxMinor( 5 );
+
+    ui->Compass->setNeedle(new QwtCompassMagnetNeedle( QwtCompassMagnetNeedle::ThinStyle ) );
+
+    QPalette newPalette = ui->Compass->palette();
+
+    //Set colors for compass.
+    newPalette.setColor( QPalette::Base, Qt::darkBlue );
+    newPalette.setColor( QPalette::WindowText, QColor( Qt::darkBlue ).dark( 120 ) );
+    newPalette.setColor( QPalette::Text, Qt::white );
+
+    //initialise color group for compass.
+    for ( int i = 0; i < QPalette::NColorGroups; i++ )
+    {
+        const QPalette::ColorGroup colorGroup = static_cast<QPalette::ColorGroup>( i );
+
+        const QColor light = newPalette.color( colorGroup, QPalette::Base ).light( 170 );
+        const QColor dark = newPalette.color( colorGroup, QPalette::Base ).dark( 170 );
+        const QColor mid = ui->Compass->frameShadow() == QwtDial::Raised
+            ? newPalette.color( colorGroup, QPalette::Base ).dark( 110 )
+            : newPalette.color( colorGroup, QPalette::Base ).light( 110 );
+
+        newPalette.setColor( colorGroup, QPalette::Dark, dark );
+        newPalette.setColor( colorGroup, QPalette::Mid, mid );
+        newPalette.setColor( colorGroup, QPalette::Light, light );
+    }
+
+    ui->Compass->setPalette( newPalette );
 
     TryToConnect();
 
@@ -192,6 +239,7 @@ void MainWindow::cmdPktReceived()
             ui->speedLeft->setValue(abs(speedLeft));
             ui->speedRight->setValue(abs(speedRight));
             ui->heading->display(heading);
+            ui->Compass->setValue(heading);
             ui->CameraTild->setSliderPosition(campos);
             ui->range->setText(QString::number(range));
             ui->measLeft->setText(QString::number(measLeft));
