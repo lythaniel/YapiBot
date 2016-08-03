@@ -9,6 +9,13 @@
 #include <qwt_compass.h>
 #include <qwt_compass_rose.h>
 #include <qwt_dial_needle.h>
+#include <qwt_series_data.h>
+#include <qwt_symbol.h>
+#include <qwt_legend.h>
+#include <qwt_polar_grid.h>
+#include <qwt_polar_curve.h>
+#include <qwt_polar_marker.h>
+#include <qwt_scale_engine.h>
 #include "map.h"
 
 
@@ -45,6 +52,45 @@ const ParamList_t gParamList [NUM_PARAM] =
     {CamParamBrightness, "CamParamBrightness", 'i', 0, -100, 100},
     {CamParamsharpness, "CamParamsharpness", 'i', 0,-100, 100},
     {CamParamIso, "CamParamIso", 'i', 0, 0, MAX_INT},
+};
+
+
+class CAccelData: public QwtSeriesData<QwtPointPolar>
+{
+public:
+    CAccelData( int x, int y )
+    {
+        QPointF point ((qreal)y/16384,(qreal)x/16384);
+        coord.setPoint(point);
+
+    }
+
+    void setValue(int x, int y)
+    {
+        QPointF point ((qreal)y/16384,(qreal)x/16384);
+        coord.setPoint(point);
+    }
+
+    virtual size_t size() const
+    {
+        return 1;
+    }
+    virtual QwtPointPolar sample( size_t i ) const
+    {
+        return coord;
+    }
+
+    virtual QRectF boundingRect() const
+    {
+        if ( d_boundingRect.width() < 0.0 )
+            d_boundingRect = qwtBoundingRect( *this );
+
+        return d_boundingRect;
+    }
+
+protected:
+
+   QwtPointPolar coord;
 };
 
 
@@ -116,6 +162,58 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     ui->Compass->setPalette( newPalette );
+
+    const QwtInterval radialInterval( 0.0, 2.0 );
+    const QwtInterval azimuthInterval( 0.0, 2* M_PI );
+
+    ui->AccelPlot->setPlotBackground(Qt::darkBlue);
+
+    //ui->AccelPlot->setAutoReplot(true);
+
+    // scales
+    ui->AccelPlot->setScale( QwtPolar::Azimuth,azimuthInterval.minValue(), azimuthInterval.maxValue(), azimuthInterval.width() / 12 );
+
+    //ui->AccelPlot->setScaleMaxMinor( QwtPolar::Azimuth, 2 );
+    ui->AccelPlot->setScale( QwtPolar::Radius,radialInterval.minValue(), radialInterval.maxValue() );
+
+
+    // grids, axes
+
+    QwtPolarGrid * d_grid = new QwtPolarGrid();
+    d_grid->setPen( QPen( Qt::white ) );
+    /*for ( int scaleId = 0; scaleId < QwtPolar::ScaleCount; scaleId++ )
+    {
+        d_grid->showGrid( scaleId );
+        d_grid->showMinorGrid( scaleId, false );
+
+        QPen minorPen( Qt::gray );
+#if 0
+        minorPen.setStyle( Qt::DotLine );
+#endif
+        d_grid->setMinorGridPen( scaleId, minorPen );
+    }*/
+    d_grid->setAxisPen( QwtPolar::AxisAzimuth, QPen( Qt::black ) );
+    d_grid->showAxis( QwtPolar::AxisAzimuth, false );
+    d_grid->showAxis( QwtPolar::AxisLeft, false );
+    d_grid->showAxis( QwtPolar::AxisRight, false );
+    d_grid->showAxis( QwtPolar::AxisTop, false );
+    d_grid->showAxis( QwtPolar::AxisBottom, false );
+    d_grid->showGrid( QwtPolar::Azimuth, false );
+    d_grid->showGrid( QwtPolar::Radius, true );
+    d_grid->attach( ui->AccelPlot );
+
+    m_AccelData = new CAccelData (0,0);
+
+
+    QwtPolarCurve * curve = new QwtPolarCurve();
+    curve->setStyle( QwtPolarCurve::Lines);
+    curve->setPen( QPen( Qt::yellow, 2 ) );
+    curve->setSymbol( new QwtSymbol( QwtSymbol::Ellipse, QBrush( Qt::red ), QPen( Qt::white ), QSize( 7, 7 ) ) );
+    curve->setData(m_AccelData);
+    curve->attach( ui->AccelPlot);
+
+
+
 
     TryToConnect();
 
@@ -236,6 +334,8 @@ void MainWindow::cmdPktReceived()
             int range = toInt(&cbuff[20]);
             int measLeft = toInt(&cbuff[24]);
             int measRight = toInt(&cbuff[28]);
+            int accelX = toInt(&cbuff[32]);
+            int accelY = toInt(&cbuff[36]);
             ui->speedLeft->setValue(abs(speedLeft));
             ui->speedRight->setValue(abs(speedRight));
             ui->heading->display(heading);
@@ -244,9 +344,11 @@ void MainWindow::cmdPktReceived()
             ui->range->setText(QString::number(range));
             ui->measLeft->setText(QString::number(measLeft));
             ui->measRight->setText(QString::number(measRight));
+            m_AccelData->setValue(accelX,accelY);
+            ui->AccelPlot->replot();
             //qDebug() << "camPos:" << campos;
-            cbuff +=32;
-            size -= 32;
+            cbuff +=40;
+            size -= 40;
         }
         else if ((unsigned int)id == YAPIBOT_PARAM)
         {

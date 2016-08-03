@@ -13,6 +13,7 @@ namespace Ui {
 class MainWindow;
 }
 
+class CAccelData;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -76,6 +77,8 @@ private:
     int toInt (unsigned char * buff);
 
     Ui::MainWindow *ui;
+
+    CAccelData * m_AccelData;
 
     int m_Speed;
 

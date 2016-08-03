@@ -73,6 +73,7 @@ void CController::run(void *)
 		CMotors * motors = CMotors::getInstance();
 		CCompass * compass = CSensorFactory::getInstance()->getCompass();
 		CRangeFinder * rangeFinder = CSensorFactory::getInstance()->getRangeFinder();
+		CLinAccel * linAccel = CSensorFactory::getInstance()->getLinAccel();
 
 		m_Status.speed_left = motors->getLeftSpeed();
 		m_Status.speed_right = motors->getRightSpeed();
@@ -81,6 +82,10 @@ void CController::run(void *)
 		m_Status.range = rangeFinder->getRange();
 		m_Status.meas_left = motors->getLeftMeas();
 		m_Status.meas_right = motors->getRightMeas();
+
+		sLinAccel accel = linAccel->getAccel();
+		m_Status.accel_x = accel.x;
+		m_Status.accel_y = accel.y;
 
 		m_Lock.get();
 		switch (m_State)

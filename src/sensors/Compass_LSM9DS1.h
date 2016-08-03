@@ -23,11 +23,7 @@ public:
 	virtual float getHeading (void);
 
 private:
-	//void writeReg (char regadd, char value);
 
-	int m_Scale;
-
-	static float ScaleTable [];
 	float m_MaxX;
 	float m_MaxY;
 	float m_MaxZ;

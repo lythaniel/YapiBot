@@ -104,8 +104,8 @@
    <widget class="QSlider" name="CameraTild">
     <property name="geometry">
      <rect>
-      <x>970</x>
-      <y>130</y>
+      <x>910</x>
+      <y>240</y>
       <width>29</width>
       <height>160</height>
      </rect>
@@ -139,8 +139,8 @@
    <widget class="QProgressBar" name="speedRight">
     <property name="geometry">
      <rect>
-      <x>1010</x>
-      <y>0</y>
+      <x>990</x>
+      <y>240</y>
       <width>31</width>
       <height>91</height>
      </rect>
@@ -158,8 +158,8 @@
    <widget class="QProgressBar" name="speedLeft">
     <property name="geometry">
      <rect>
-      <x>970</x>
-      <y>0</y>
+      <x>950</x>
+      <y>240</y>
       <width>31</width>
       <height>91</height>
      </rect>
@@ -193,8 +193,8 @@
    <widget class="QLabel" name="measLeft">
     <property name="geometry">
      <rect>
-      <x>970</x>
-      <y>100</y>
+      <x>950</x>
+      <y>340</y>
       <width>31</width>
       <height>17</height>
      </rect>
@@ -209,8 +209,8 @@
    <widget class="QLabel" name="measRight">
     <property name="geometry">
      <rect>
-      <x>1010</x>
-      <y>100</y>
+      <x>990</x>
+      <y>340</y>
       <width>31</width>
       <height>17</height>
      </rect>
@@ -400,6 +400,16 @@
      <enum>QwtDial::RotateNeedle</enum>
     </property>
    </widget>
+   <widget class="QwtPolarPlot" name="AccelPlot">
+    <property name="geometry">
+     <rect>
+      <x>890</x>
+      <y>0</y>
+      <width>121</width>
+      <height>121</height>
+     </rect>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -432,6 +442,11 @@
    <class>QwtDial</class>
    <extends>QWidget</extends>
    <header>qwt_dial.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QwtPolarPlot</class>
+   <extends>QFrame</extends>
+   <header>qwt_polar_plot.h</header>
   </customwidget>
   <customwidget>
    <class>TouchPad</class>

@@ -59,7 +59,6 @@
 
 
 CCompass_LSM9DS1::CCompass_LSM9DS1() :
-m_Scale (4),
 m_MaxX(-32769),
 m_MaxY(-32769),
 m_MaxZ(-32769),
@@ -78,29 +77,33 @@ CCompass_LSM9DS1::~CCompass_LSM9DS1() {
 	// TODO Set compass to low power and reset ? Need to be sure that the bus still exist.
 }
 
-void CCompass_LSM9DS1::setBus (CI2Cbus * i2c)
+void CCompass_LSM9DS1::setBus (CI2Cbus * bus)
 {
 	unsigned char buff[6];
 	unsigned char whoAmI = 0;
 
-	m_I2Cbus = i2c;
+	m_I2Cbus = bus;
 
-	m_I2Cbus->read(LSM9DS1_MAG_I2C_ADD, WHO_AM_I, &whoAmI, 1);
-
-	if (whoAmI != WHO_AM_I_VAL)
+	if (m_I2Cbus != NULL)
 	{
-		fprintf (stderr, "[LSM9DS1 MAG] Error wrong device detected : %d",whoAmI);
-		return;
+
+		m_I2Cbus->read(LSM9DS1_MAG_I2C_ADD, WHO_AM_I, &whoAmI, 1);
+
+		if (whoAmI != WHO_AM_I_VAL)
+		{
+			fprintf (stderr, "[LSM9DS1 MAG] Error wrong device detected : %d",whoAmI);
+			return;
+		}
+
+		buff[0] = CTRL_REG1_M,
+		buff[1] = CTRL_REG1_M_VAL;
+		buff[2] = CTRL_REG2_M_VAL;
+		buff[3] = CTRL_REG3_M_VAL;
+		buff[4] = CTRL_REG4_M_VAL;
+		buff[5] = CTRL_REG5_M_VAL;
+
+		m_I2Cbus->write(LSM9DS1_MAG_I2C_ADD,buff, 6);
 	}
-
-	buff[0] = CTRL_REG1_M,
-	buff[1] = CTRL_REG1_M_VAL;
-	buff[2] = CTRL_REG2_M_VAL;
-	buff[3] = CTRL_REG3_M_VAL;
-	buff[4] = CTRL_REG4_M_VAL;
-	buff[5] = CTRL_REG5_M_VAL;
-
-	m_I2Cbus->write(LSM9DS1_MAG_I2C_ADD,buff, 6);
 
 }
 
@@ -119,9 +122,9 @@ float CCompass_LSM9DS1::getHeading (void)
 		sx = ((buffer[1])<< 8) + buffer[0] ;
 		sy = ((buffer[3])<< 8) + buffer[2];
 		sz = (buffer[5]<< 8) + buffer[4];
-		fx = -sx;// * ScaleTable[m_Scale];
-		fy = sy;// * ScaleTable[m_Scale];
-		fz = sz;// * ScaleTable[m_Scale];
+		fx = -sx;
+		fy = sy;
+		fz = sz;
 
 		m_MaxX = max (m_MaxX,fx);
 		m_MaxY = max (m_MaxY,fy);
@@ -147,8 +150,8 @@ float CCompass_LSM9DS1::getHeading (void)
 
 	}
 
-	//m_I2Cbus->write (HMC5883L_I2C_ADD,&address, 1);
-	//printf ("compass read out: X: %f/%f/%f/%f | : Y: %f%/f/%f/%f,  heading: %f\n",m_MaxX, m_MinX, m_AvgX, m_MaxY, m_MinY, m_AvgY, heading);
+
+
 	return heading;
 }
 

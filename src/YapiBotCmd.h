@@ -80,6 +80,8 @@ typedef struct {
 	int range;
 	int meas_left;
 	int meas_right;
+	int accel_x;
+	int accel_y;
 } YapiBotStatus_t;
 
 typedef struct {

@@ -12,6 +12,7 @@
 
 #include "Compass.h"
 #include "RangeFinder.h"
+#include "LinAccel.h"
 
 typedef enum
 {
@@ -24,6 +25,10 @@ typedef enum
 	RANGEFINDER_2Y0A21
 } eRangeFinderType;
 
+typedef enum
+{
+	LINACCEL_LSM9DS1
+} eLinAccelType;
 
 class CSensorFactory : public CSingleton<CSensorFactory>
 {
@@ -36,10 +41,13 @@ public:
 	CCompass * getCompass (void);
 	CRangeFinder * createRangeFinder (eRangeFinderType type);
 	CRangeFinder * getRangeFinder (void);
+	CLinAccel* createLinAccel (eLinAccelType type);
+	CLinAccel * getLinAccel (void);
 
 private:
 	CCompass * m_Compass;
 	CRangeFinder * m_RangeFinder;
+	CLinAccel * m_LinAccel;
 
 };
 

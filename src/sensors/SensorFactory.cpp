@@ -9,10 +9,12 @@
 #include "Compass_HMC5883L.h"
 #include "Compass_LSM9DS1.h"
 #include "RangeFinder_2Y0A21.h"
+#include "LinAccel_LSM9DS1.h"
 
 CSensorFactory::CSensorFactory() :
 m_Compass(NULL),
-m_RangeFinder(NULL)
+m_RangeFinder(NULL),
+m_LinAccel(NULL)
 {
 
 
@@ -26,6 +28,10 @@ CSensorFactory::~CSensorFactory() {
 	if (m_RangeFinder != NULL)
 	{
 		delete m_RangeFinder;
+	}
+	if (m_LinAccel != NULL)
+	{
+		delete m_LinAccel;
 	}
 }
 
@@ -87,4 +93,32 @@ CRangeFinder * CSensorFactory::createRangeFinder (eRangeFinderType type)
 CRangeFinder * CSensorFactory::getRangeFinder (void)
 {
 	return m_RangeFinder;
+}
+
+CLinAccel * CSensorFactory::createLinAccel (eLinAccelType type)
+{
+	if (m_LinAccel == NULL)
+	{
+		switch (type)
+		{
+		case LINACCEL_LSM9DS1:
+			m_LinAccel = new CLinAccel_LSM9DS1();
+			break;
+		default:
+			fprintf (stderr, "[SENSORS] Impossible to create unknown linear accelerometer type");
+			break;
+		}
+	}
+	else
+	{
+		fprintf (stdout, "[SENSORS] Warning, trying to create linear accelerometer while it already exists.");
+	}
+
+	return m_LinAccel;
+
+}
+
+CLinAccel * CSensorFactory::getLinAccel (void)
+{
+	return m_LinAccel;
 }

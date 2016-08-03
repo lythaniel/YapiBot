@@ -50,6 +50,13 @@ int main(int argc, const char **argv)
 		rangeFinder->setBus(&i2c);
 	}
 
+	//Create linear accelerometer
+	CLinAccel * linAccel = CSensorFactory::getInstance()->createLinAccel(LINACCEL_LSM9DS1);
+	if (linAccel != NULL)
+	{
+		linAccel->setBus(&i2c);
+	}
+
 	//Create the mapper.
 	CMapper::getInstance();
 
