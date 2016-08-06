@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include "Motors.h"
 #include "Network.h"
+#include "Settings.h"
 
 #define PWM_GPIO_R_PWM 23
 #define PWM_GPIO_R_FW 24
@@ -62,6 +63,10 @@ m_SpeedErrGain(SPEED_ERROR_GAIN),
 m_AccErrGain(ACC_ERROR_GAIN)
 {
 	int ret = 0;
+	m_SpeedConv = CSettings::getInstance()->getFloat("MOTORS", "Speed conversion", SPEED_CONV);
+	m_SpeedErrGain = CSettings::getInstance()->getFloat("MOTORS", "Speed error gain", SPEED_ERROR_GAIN);
+	m_AccErrGain = CSettings::getInstance()->getFloat("MOTORS", "Acceleration error gain", ACC_ERROR_GAIN);
+
 #ifdef MOTORS_CONTROL
 	m_Pi = pigpio_start(NULL,NULL); //local gpio
 	if (m_Pi < 0)
@@ -536,16 +541,20 @@ void CMotors::setParameter (YapiBotParam_t param, char * buffer, unsigned int si
 	}
 
 
+
 	switch (param)
 	{
 		case MtrParamSpeedConv:
 			m_SpeedConv = toFloat (&buffer[0]);
+			CSettings::getInstance()->setFloat("MOTORS", "Speed conversion", m_SpeedConv);
 			break;
 		case MtrParamSpeedErrGain:
 			m_SpeedErrGain = toFloat (&buffer[0]);
+			CSettings::getInstance()->setFloat("MOTORS", "Speed error gain", m_SpeedErrGain);
 			break;
 		case MtrParamAccErrGain:
 			m_AccErrGain = toFloat (&buffer[0]);
+			CSettings::getInstance()->setFloat("MOTORS", "Acceleration error gain", m_AccErrGain);
 			break;
 		default:
 			fprintf (stderr, "Unknown motor parameter !");

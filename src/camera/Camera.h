@@ -68,6 +68,14 @@ private:
 	MMAL_CONNECTION_T*			VidToSplitConn;
 	CCameraOutput*				Outputs[4];
 
+	int							m_Saturation;
+	int							m_Contrast;
+	int							m_Brightness;
+	int							m_Sharpness;
+	int							m_Iso;
+
+
+
 	friend CCamera* StartCamera(int width, int height, int framerate, int num_levels, bool do_argb_conversion);
 	friend void StopCamera();
 };

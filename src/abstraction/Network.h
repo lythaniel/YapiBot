@@ -63,6 +63,9 @@ private:
 
 	char m_RxBuffer[CMDBUFFER_SIZE];
 
+	short m_VideoPort;
+	short m_CmdPort;
+
 
 };
 

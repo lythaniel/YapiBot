@@ -14,6 +14,7 @@
 #include "EventObserver.h"
 #include "ScriptEngine.h"
 #include "Mapper.h"
+#include "Settings.h"
 
 #define MAIN_TEXTURE_WIDTH 640
 #define MAIN_TEXTURE_HEIGHT 480
@@ -24,6 +25,9 @@
 //entry point
 int main(int argc, const char **argv)
 {
+	//Create Settings manager.
+	CSettings::getInstance();
+
 	//Create Event Observer
 	CEventObserver::getInstance();
 

@@ -8,6 +8,7 @@
 #include <Compass_LSM9DS1.h>
 #include <cstdio>
 #include <math.h>
+#include "Settings.h"
 
 #define LSM9DS1_MAG_I2C_ADD 0x1C
 
@@ -64,13 +65,11 @@ m_MaxY(-32769),
 m_MaxZ(-32769),
 m_MinX(32769),
 m_MinY(32769),
-m_MinZ(32769),
-m_AvgX(0),
-m_AvgY(0),
-m_AvgZ(0)
+m_MinZ(32769)
 {
-
-
+	m_AvgX = CSettings::getInstance()->getInt("COMPASS LSM9DS1","CalX",0);
+	m_AvgY = CSettings::getInstance()->getInt("COMPASS LSM9DS1","CalY",0);
+	m_AvgZ = CSettings::getInstance()->getInt("COMPASS LSM9DS1","CalZ",0);
 }
 
 CCompass_LSM9DS1::~CCompass_LSM9DS1() {
@@ -107,6 +106,14 @@ void CCompass_LSM9DS1::setBus (CI2Cbus * bus)
 
 }
 
+void CCompass_LSM9DS1::stopCalibration ()
+{
+	m_Calib = false;
+	CSettings::getInstance()->setInt("COMPASS LSM9DS1","CalX",m_AvgX);
+	CSettings::getInstance()->setInt("COMPASS LSM9DS1","CalY",m_AvgY);
+	CSettings::getInstance()->setInt("COMPASS LSM9DS1","CalZ",m_AvgZ);
+}
+
 float CCompass_LSM9DS1::getHeading (void)
 {
 	float heading = 0;
@@ -126,17 +133,21 @@ float CCompass_LSM9DS1::getHeading (void)
 		fy = sy;
 		fz = sz;
 
-		m_MaxX = max (m_MaxX,fx);
-		m_MaxY = max (m_MaxY,fy);
-		m_MaxZ = max (m_MaxZ,fz);
+		if (m_Calib)
+		{
 
-		m_MinX = min (m_MinX,fx);
-		m_MinY = min (m_MinY,fy);
-		m_MinZ = min (m_MinZ,fz);
+			m_MaxX = max (m_MaxX,fx);
+			m_MaxY = max (m_MaxY,fy);
+			m_MaxZ = max (m_MaxZ,fz);
 
-		m_AvgX = ((m_MaxX - m_MinX)/2)-m_MaxX;
-		m_AvgY = ((m_MaxY - m_MinY)/2)-m_MaxY;
-		m_AvgZ = ((m_MaxZ - m_MinZ)/2)-m_MaxZ;
+			m_MinX = min (m_MinX,fx);
+			m_MinY = min (m_MinY,fy);
+			m_MinZ = min (m_MinZ,fz);
+
+			m_AvgX = ((m_MaxX - m_MinX)/2)-m_MaxX;
+			m_AvgY = ((m_MaxY - m_MinY)/2)-m_MaxY;
+			m_AvgZ = ((m_MaxZ - m_MinZ)/2)-m_MaxZ;
+		}
 
 		fx += m_AvgX;
 		fy += m_AvgY;

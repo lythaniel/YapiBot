@@ -15,6 +15,7 @@
 #include "Mapper.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "Settings.h"
 
 #define CONTROLLER_PERIOD 200
 
@@ -52,6 +53,13 @@ m_BearingGoodCntLim(BEARING_GOOD_CNT_LIMIT)
 	m_Status.range = 0;
 	m_Status.meas_left = 0;
 	m_Status.meas_right = 0;
+
+	m_CollisionDist = CSettings::getInstance()->getInt("CONTROLER", "Collision distance", COLLISION_MIN_DIST);
+	m_MvtErrGain = CSettings::getInstance()->getInt("CONTROLER", "Move straight error gain", MOVE_STRAIGHT_ERR_GAIN);
+	m_BearingErrGain = CSettings::getInstance()->getInt("CONTROLER", "Bearing error gain", BEARING_ERR_GAIN);
+	m_BearingErrLim = CSettings::getInstance()->getInt("CONTROLER", "Bearing error limit", BEARING_ERR_LIM);
+	m_BearingGoodCntLim = CSettings::getInstance()->getInt("CONTROLER", "Bearing good count limit",BEARING_GOOD_CNT_LIMIT);
+
 	CNetwork::getInstance()->regCmdReceived(this,&CController::CmdPckReceived);
 	CEventObserver::getInstance()->registerOnEvent(EVENT_MASK_ALL,this,&CController::EventCallback);
 	m_Thread = new CThread ();
@@ -130,6 +138,8 @@ void CController::runCompassCalibration (YapiBotStatus_t status)
 			fprintf(stdout,"Rotation complete\n");
 			m_ReqLeftMov = 0;
 			m_ReqRightMov = 0;
+			CCompass * compass = CSensorFactory::getInstance()->getCompass();
+			compass->stopCalibration();
 		}
 		else
 		{
@@ -409,6 +419,8 @@ void CController::compassCalibration (void)
 	m_ReqRightMov = 5000;
 
 	CMotors::getInstance()->resetDist();
+	CCompass * compass = CSensorFactory::getInstance()->getCompass();
+	compass->startCalibration();
 
 	m_State = CTRL_STATE_COMP_CAL;
 
@@ -422,6 +434,11 @@ void CController::moveStraight (int distance)
 	{
 		CEventObserver::getInstance()->notify(CtrlMoveCancel);
 		CMotors::getInstance()->move (0,0);
+		if (m_State == CTRL_STATE_COMP_CAL)
+		{
+			CCompass * compass = CSensorFactory::getInstance()->getCompass();
+			compass->stopCalibration();
+		}
 	}
 
 	m_DistMovedLeft = 0;
@@ -445,6 +462,11 @@ void CController::alignBearing (int bearing)
 	{
 		CEventObserver::getInstance()->notify(CtrlMoveCancel);
 		CMotors::getInstance()->move (0,0);
+		if (m_State == CTRL_STATE_COMP_CAL)
+		{
+			CCompass * compass = CSensorFactory::getInstance()->getCompass();
+			compass->stopCalibration();
+		}
 	}
 
 	m_RequestedBearing = bearing;
@@ -463,6 +485,11 @@ void CController::moveBearing (int bearing, int distance)
 	{
 		CEventObserver::getInstance()->notify(CtrlMoveCancel);
 		CMotors::getInstance()->move (0,0);
+		if (m_State == CTRL_STATE_COMP_CAL)
+		{
+			CCompass * compass = CSensorFactory::getInstance()->getCompass();
+			compass->stopCalibration();
+		}
 	}
 
 	m_DistMovedLeft = 0;
@@ -486,6 +513,11 @@ void CController::rotate (int rot)
 	{
 		CEventObserver::getInstance()->notify(CtrlMoveCancel);
 		CMotors::getInstance()->move (0,0);
+		if (m_State == CTRL_STATE_COMP_CAL)
+		{
+			CCompass * compass = CSensorFactory::getInstance()->getCompass();
+			compass->stopCalibration();
+		}
 	}
 
 	m_DistMovedLeft = 0;
@@ -508,6 +540,11 @@ void CController::refreshMap (void)
 	{
 		CEventObserver::getInstance()->notify(CtrlMoveCancel);
 		CMotors::getInstance()->move (0,0);
+		if (m_State == CTRL_STATE_COMP_CAL)
+		{
+			CCompass * compass = CSensorFactory::getInstance()->getCompass();
+			compass->stopCalibration();
+		}
 	}
 
 	m_DistMovedLeft = 0;
@@ -737,23 +774,27 @@ void CController::setParameter (YapiBotParam_t param, char * buffer, unsigned in
 		fprintf (stderr, "Cannot set controller parameter (not enough arguments)");
 	}
 
-
 	switch (param)
 	{
 		case CtrlParamColDist:
 			m_CollisionDist = toInt (&buffer[0]);
+			CSettings::getInstance()->setInt("CONTROLER", "Collision distance", m_CollisionDist);
 			break;
 		case CtrlParamMvErrGain:
 			m_MvtErrGain = toInt (&buffer[0]);
+			CSettings::getInstance()->setInt("CONTROLER", "Move straight error gain", m_MvtErrGain);
 			break;
 		case CtrlParamBearingErrGain:
 			m_BearingErrGain = toInt (&buffer[0]);
+			CSettings::getInstance()->setInt("CONTROLER", "Bearing error gain", m_BearingErrGain);
 			break;
 		case CtrlParamBearingErrLim:
 			m_BearingErrLim = toInt (&buffer[0]);
+			CSettings::getInstance()->setInt("CONTROLER", "Bearing error limit", m_BearingErrLim);
 			break;
 		case CtrlParamBearingGoodCnt:
 			m_BearingGoodCntLim = toInt (&buffer[0]);
+			CSettings::getInstance()->setInt("CONTROLER", "Bearing good count limit",m_BearingGoodCntLim);
 			break;
 		default:
 			fprintf (stderr, "Unknown controller parameter !");

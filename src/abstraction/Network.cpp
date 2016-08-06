@@ -12,6 +12,7 @@
 #include "Mutex.h"
 #include "Semaphore.h"
 #include "EventObserver.h"
+#include "Settings.h"
 
 
 #define MAXPENDING 1    /* Max connection requests */
@@ -30,6 +31,9 @@ m_VideoClientConnected(false),
 m_CmdClientConnected(false),
 m_pRxCmdThread(NULL)
 {
+	m_VideoPort = CSettings::getInstance()->getInt("NETWORK","Video port",VIDEOPORT);
+	m_CmdPort = CSettings::getInstance()->getInt("NETWORK","Command port",CMDPORT);
+
 	m_pVideoServerThread = new CThread(NULL);
 	m_pVideoServerThread->regThreadProcess(this,&CNetwork::VideoServerThread);
 	m_pVideoSockMutex = new CMutex();
@@ -107,7 +111,7 @@ void CNetwork::VideoServerThread (void *)
 	memset(&serveraddr, 0, sizeof(serveraddr));       /* Clear struct */
 	serveraddr.sin_family = AF_INET;                  /* Internet/IP */
 	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);   /* Incoming addr */
-	serveraddr.sin_port = htons(VIDEOPORT);       /* server port */
+	serveraddr.sin_port = htons(m_VideoPort);       /* server port */
 	
 	
 	
@@ -154,7 +158,7 @@ void CNetwork::CmdServerThread (void *)
 	memset(&serveraddr, 0, sizeof(serveraddr));       /* Clear struct */
 	serveraddr.sin_family = AF_INET;                  /* Internet/IP */
 	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);   /* Incoming addr */
-	serveraddr.sin_port = htons(CMDPORT);       /* server port */
+	serveraddr.sin_port = htons(m_CmdPort);       /* server port */
 
 
 

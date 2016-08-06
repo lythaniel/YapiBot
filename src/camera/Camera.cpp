@@ -8,6 +8,7 @@ http://raufast.org/download/camcv_vid0.c to get the camera feeding into opencv. 
 #include "Camera.h"
 #include <stdio.h>
 #include "Network.h"
+#include "Settings.h"
 
 // Standard port setting for the camera component
 #define MMAL_CAMERA_PREVIEW_PORT 0
@@ -56,6 +57,11 @@ CCamera::CCamera()
 	FrameRate = 0;
 	Height = 0;
 	Width = 0;
+	m_Saturation = 0;
+	m_Contrast = 0;
+	m_Brightness = 0;
+	m_Sharpness = 0;
+	m_Iso = 0;
 }
 
 CCamera::~CCamera()
@@ -328,6 +334,24 @@ bool CCamera::Init(int width, int height, int framerate, int num_levels, bool do
 	SplitterComponent = splitter;
 	VidToSplitConn = vid_to_split_connection;
 	memcpy(Outputs,outputs,sizeof(outputs));
+
+
+	m_Saturation = CSettings::getInstance()->getInt("CAMERA", "Saturation", CameraParameters.saturation);
+	raspicamcontrol_set_saturation(CameraComponent,m_Saturation);
+
+	m_Contrast = CSettings::getInstance()->getInt("CAMERA", "Contrast", CameraParameters.contrast);
+	raspicamcontrol_set_contrast(CameraComponent,m_Contrast);
+
+	m_Brightness = CSettings::getInstance()->getInt("CAMERA", "Brightness", CameraParameters.brightness);
+	raspicamcontrol_set_brightness(CameraComponent, m_Brightness);
+
+
+	m_Sharpness = CSettings::getInstance()->getInt("CAMERA", "Sharpness", CameraParameters.sharpness);
+	raspicamcontrol_set_sharpness(CameraComponent,m_Sharpness);
+
+
+	m_Iso = CSettings::getInstance()->getInt("CAMERA", "ISO", CameraParameters.ISO);
+	raspicamcontrol_set_ISO(CameraComponent, m_Iso);
 
 	//return success
 	printf("Camera successfully created\n");
@@ -729,19 +753,29 @@ void CCamera::setParameter (YapiBotParam_t param, char * buffer, unsigned int si
 	switch (param)
 	{
 		case CamParamSaturation:
-			raspicamcontrol_set_saturation(CameraComponent,val);
+			m_Saturation = val;
+			raspicamcontrol_set_saturation(CameraComponent,m_Saturation);
+			CSettings::getInstance()->setInt("CAMERA", "Saturation", m_Saturation);
 			break;
 		case CamParamContrast:
-			raspicamcontrol_set_contrast(CameraComponent,val);
+			m_Contrast = val;
+			raspicamcontrol_set_contrast(CameraComponent,m_Contrast);
+			CSettings::getInstance()->setInt("CAMERA", "Contrast", m_Contrast);
 			break;
 		case CamParamBrightness:
-			raspicamcontrol_set_brightness(CameraComponent,val);
+			m_Brightness = val;
+			raspicamcontrol_set_brightness(CameraComponent,m_Brightness);
+			CSettings::getInstance()->setInt("CAMERA", "Brightness", m_Brightness);
 			break;
 		case CamParamsharpness:
-			raspicamcontrol_set_sharpness(CameraComponent,val);
+			m_Sharpness = val;
+			raspicamcontrol_set_sharpness(CameraComponent,m_Sharpness);
+			CSettings::getInstance()->setInt("CAMERA", "Sharpness", m_Sharpness);
 			break;
 		case CamParamIso:
-			raspicamcontrol_set_ISO(CameraComponent,val);
+			m_Iso = val;
+			raspicamcontrol_set_ISO(CameraComponent,m_Iso);
+			CSettings::getInstance()->setInt("CAMERA", "ISO", m_Iso);
 			break;
 
 		default:

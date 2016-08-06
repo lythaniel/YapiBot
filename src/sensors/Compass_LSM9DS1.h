@@ -21,6 +21,8 @@ protected:
 public:
 	virtual void setBus (CI2Cbus * bus);
 	virtual float getHeading (void);
+	virtual void stopCalibration ();
+
 
 private:
 
@@ -33,6 +35,7 @@ private:
 	float m_AvgX;
 	float m_AvgY;
 	float m_AvgZ;
+
 
 };
 
