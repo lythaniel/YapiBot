@@ -148,5 +148,5 @@ void CVideoProcessing::process (void * data, unsigned int height, unsigned int w
 
     std::stringstream ss;
     ss << "min: " << (int)minh << " / " << (int)mins << "   max: " << (int)maxh << " / " << (int)maxs;
-    putText(cam, ss.str(), Point(10, 60), FONT_HERSHEY_PLAIN, 1.0, CV_RGB(0,0,255), 1.0);
+    cv::putText(cam, ss.str(), Point(10, 60), FONT_HERSHEY_PLAIN, 1.0, CV_RGB(0,0,255), 1.0);
 }

@@ -71,10 +71,12 @@ private slots:
 
 private:
 
-    void sendCommand (YapiBotCmd_t cmd, char * payload = NULL, unsigned int pldsize = 0);
+    void sendCommand (YapiBotCmd_t cmd, unsigned char * payload = NULL, unsigned int plsize = 0);
+    void processCmd(YapiBotCmd_t cmd, unsigned char * payload, unsigned int plsize);
 
-    void fromInt (char * buff, int val);
-    int toInt (unsigned char * buff);
+
+    void fromInt (int val, void * buff);
+    int toInt (void * buff);
 
     Ui::MainWindow *ui;
 
@@ -84,7 +86,15 @@ private:
 
     bool m_Connected;
     QTcpSocket * m_CmdSocket;
-    char m_CmdBuffer[256];
+    unsigned char m_CmdBuffer[YAPIBOT_MAX_PL_SIZE+sizeof(YapiBotHeader_t)];
+
+
+    YapiBotHeader_t * header;
+    unsigned char m_RxPayload[YAPIBOT_MAX_PL_SIZE];
+    unsigned int m_SizeToCopy;
+    unsigned int m_PayloadIdx;
+    YapiBotCmd_t m_CmdId;
+
     bool m_UpdateParam;
     VideoWidget * m_pVideo;
     CVideoProcessing * m_pVideoProc;

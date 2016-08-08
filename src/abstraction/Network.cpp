@@ -13,6 +13,7 @@
 #include "Semaphore.h"
 #include "EventObserver.h"
 #include "Settings.h"
+#include "Utils.h"
 
 
 #define MAXPENDING 1    /* Max connection requests */
@@ -44,11 +45,25 @@ m_pRxCmdThread(NULL)
 	m_pCmdSockMutex = new CMutex();
 	m_pCmdClientDisconnected = new CSemaphore(1);
 
+	m_pCmdTxBuffer = new char [sizeof(YapiBotHeader_t) + YAPIBOT_MAX_PL_SIZE];
+	m_pCmdRxBuffer = new char [sizeof(YapiBotHeader_t) + YAPIBOT_MAX_PL_SIZE];
+
+	m_pCmdTxHeader = (YapiBotHeader_t *)&m_pCmdTxBuffer[0];
+	m_pCmdTxPayload = m_pCmdTxBuffer + sizeof(YapiBotHeader_t);
+	m_pCmdTxHeader->magicNumber = YAPIBOT_MAGIC_NUMBER;
 
 }
 CNetwork::~CNetwork()
 {
 	//TO DO: CLEAN UP !
+	if (m_pCmdTxBuffer != NULL)
+	{
+		delete [] m_pCmdTxBuffer;
+	}
+	if (m_pCmdRxBuffer != NULL)
+	{
+		delete [] m_pCmdRxBuffer;
+	}
 }
 
 void CNetwork::start(void)
@@ -62,13 +77,22 @@ void CNetwork::stop (void)
 	
 }
 
-void CNetwork::sendCmdPck (unsigned char * buffer, unsigned int size)
+void CNetwork::sendCmdPck (YapiBotCmd_t id, unsigned char * buffer, unsigned int size)
 {
 	if (m_pCmdSockMutex->get(MUTEX_TIMEOUT_DONTWAIT))
 		{
 			if (m_CmdClientConnected)
 			{
-				int ret = send(m_CmdClientSock, buffer, size, 0);
+				m_pCmdTxHeader->id = id;
+				if (size > YAPIBOT_MAX_PL_SIZE)
+				{
+					fprintf (stderr, "[NETWORK] Error max pl size reached for Tx payload, payload will be truncated (id = %d, size = %d)", id,size);
+					size = YAPIBOT_MAX_PL_SIZE;
+				}
+				m_pCmdTxHeader->payloadSize = size;
+				memcpy (m_pCmdTxPayload, buffer, size);
+
+				int ret = send(m_CmdClientSock, m_pCmdTxBuffer,sizeof(YapiBotHeader_t) + m_pCmdTxHeader->payloadSize, 0);
 				if (ret == -1)
 				{
 					m_CmdClientSock = -1;
@@ -205,13 +229,20 @@ void CNetwork::CmdServerThread (void *)
 
 void CNetwork::RxCmdThread (void *)
 {
+	YapiBotHeader_t * header;
+	char payload[YAPIBOT_MAX_PL_SIZE];
+	unsigned int size_to_copy = 0;
+	unsigned int payloadIdx = 0;
+	unsigned int len;
+	YapiBotCmd_t id;
+
 	while (1)
 	{
 		//if (m_pCmdSockMutex->get())
 		{
 			if (m_CmdClientConnected)
 			{
-				int ret = recv(m_CmdClientSock, m_RxBuffer, CMDBUFFER_SIZE, 0);
+				int ret = recv(m_CmdClientSock, m_pCmdRxBuffer, (sizeof(YapiBotHeader_t) + YAPIBOT_MAX_PL_SIZE), 0);
 				if (ret == -1)
 				{
 					m_CmdClientSock = -1;
@@ -221,12 +252,71 @@ void CNetwork::RxCmdThread (void *)
 					fprintf(stdout,"Command client disconnected\n");
 				}
 				else {
-					if (m_pRxCb != NULL) {
-						m_pRxCb->trigger(m_RxBuffer,ret);
+					len = ret;
+					unsigned int idx = 0;
+					while (len > 0)
+					{
+						if (size_to_copy > 0) //We still have payload to copy.
+						{
+							unsigned int copysz = (size_to_copy<len)?size_to_copy:len;
+							if ((copysz + payloadIdx) > YAPIBOT_MAX_PL_SIZE)
+							{
+								//Something is very wrong here.
+								copysz = YAPIBOT_MAX_PL_SIZE - payloadIdx;
+								fprintf (stderr, "[NETWORK] Error during payload copy, payload will be truncated");
+							}
+							memcpy(&payload[payloadIdx],&m_pCmdRxBuffer[idx],copysz);
+							len -= copysz;
+							size_to_copy -= copysz;
+							idx += copysz;
+							payloadIdx += copysz;
+							if ((size_to_copy == 0)||(payloadIdx == YAPIBOT_MAX_PL_SIZE))
+							{
+								//Trigger callback.
+								if (m_pRxCb != NULL)
+								{
+									m_pRxCb->trigger(id, payload, payloadIdx);
+								}
+								size_to_copy = 0;
+								payloadIdx = 0;
+							}
+						}
+						else
+						{
+							header = (YapiBotHeader_t *)&m_pCmdRxBuffer[idx];
+							if (header->magicNumber == YAPIBOT_MAGIC_NUMBER)
+							{
+								idx += sizeof (YapiBotHeader_t);
+								len -= sizeof (YapiBotHeader_t);
+
+								if (header->payloadSize > YAPIBOT_MAX_PL_SIZE)
+								{
+									fprintf (stderr, "[NETWORK] Error max pl size reached for Rx payload, payload will be truncated (id = %d, size = %d)", header->id,header->payloadSize);
+									header->payloadSize = YAPIBOT_MAX_PL_SIZE;
+								}
+								size_to_copy = header->payloadSize;
+								payloadIdx = 0;
+								id = header->id;
+								if (size_to_copy == 0)
+								{
+									//Trigger callback without payload.
+									if (m_pRxCb != NULL)
+									{
+										m_pRxCb->trigger(id, NULL, payloadIdx);
+									}
+								}
+							}
+							else //We are not synchronized.
+							{
+								//Advance to the next byte.
+								len -= 1;
+								idx += 1;
+							}
+						}
 					}
 				}
 			}
-			m_pCmdSockMutex->release();
+			//m_pCmdSockMutex->release();
 		}
 
 	}

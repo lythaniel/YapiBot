@@ -34,7 +34,7 @@ include_directories(${OPT_VC}/interface/vcos)
 include_directories(${OPT_VC}/)
 include_directories(${OPT_VC}/interface/vcos/pthreads)
 include_directories(${OPT_VC}/interface/vmcs_host/linux)
-include_directories(${OPT_VC}/host_applications/linux/libs/bcm_host/include)
+#include_directories(${OPT_VC}/host_applications/linux/libs/bcm_host/include)
 
 include_directories(${GNU_EABIHF_PATH})
 

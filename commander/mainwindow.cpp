@@ -75,7 +75,7 @@ public:
     {
         return 1;
     }
-    virtual QwtPointPolar sample( size_t i ) const
+    virtual QwtPointPolar sample( size_t ) const
     {
         return coord;
     }
@@ -97,10 +97,12 @@ protected:
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
-    m_Connected(false)
+    m_Connected(false),
+    m_SizeToCopy(0),
+    m_PayloadIdx(0)
 {
-    QVBoxLayout * layout = new QVBoxLayout();
-    QPalette palette0;
+    //QVBoxLayout * layout = new QVBoxLayout();
+    //QPalette palette0;
 
     ui->setupUi(this);
     m_pVideoProc = new CVideoProcessing();
@@ -228,34 +230,31 @@ MainWindow::~MainWindow()
 
 }
 
-void MainWindow::fromInt (char * buff, int val)
+void MainWindow::fromInt (int val, void * buff)
 {
-    buff [0] = (val >> 24) & 0xFF;
-    buff [1] = (val >> 16) & 0xFF;
-    buff [2] = (val >> 8) & 0xFF;
-    buff [3] = val & 0xFF;
+    memcpy (buff,&val,4);
 }
 
 void MainWindow::updateSpeed (int x, int y)
 {
-    char payload [8];
-    fromInt(&payload[0],x);
-    fromInt(&payload[4],y);
+    unsigned char payload [8];
+    fromInt(x, &payload[0]);
+    fromInt(y, &payload[4]);
     sendCommand(CmdMove,payload,8);
     qDebug() << "speed updated: (" << x << " / " << y << ")";
 }
 
 void MainWindow::on_Forw_pressed()
 {
-    char payload [4];
-    fromInt(&payload[0],m_Speed);
+    unsigned char payload [4];
+    fromInt(m_Speed, &payload[0]);
     sendCommand (CmdMoveFwd,payload,4);
 }
 
 void MainWindow::on_Rear_pressed()
 {
-     char payload [4];
-     fromInt(&payload[0],m_Speed);
+     unsigned char payload [4];
+     fromInt(m_Speed, &payload[0]);
      sendCommand (CmdMoveRear,payload,4);
 }
 
@@ -271,8 +270,8 @@ void MainWindow::on_Rear_released()
 
 void MainWindow::on_Left_pressed()
 {
-    char payload [4];
-    fromInt(&payload[0],m_Speed);
+    unsigned char payload [4];
+    fromInt(m_Speed, &payload[0]);
     sendCommand (CmdMoveLeft,payload,4);
 }
 
@@ -283,8 +282,8 @@ void MainWindow::on_Left_released()
 
 void MainWindow::on_Right_pressed()
 {
-     char payload [4];
-     fromInt(&payload[0],m_Speed);
+     unsigned char payload [4];
+     fromInt(m_Speed, &payload[0]);
      sendCommand (CmdMoveRight,payload,4);
 }
 
@@ -296,13 +295,13 @@ void MainWindow::on_Right_released()
 void MainWindow::Connected()
 {
 
-    char payload[8];
+    unsigned char payload[8];
 
     m_Connected = true;
 
     int index = ui->paramlist->currentIndex();
 
-    fromInt(&payload[0],gParamList[index].param);
+    fromInt(gParamList[index].param, &payload[0]);
 
 
     sendCommand(CmdGetParam, payload,4);
@@ -316,26 +315,85 @@ void MainWindow::Deconnected()
     QTimer::singleShot(1000, this, SLOT(TryToConnect()));
 }
 
-void MainWindow::cmdPktReceived()
+void MainWindow::cmdPktReceived(void)
 {
     QByteArray buff = m_CmdSocket->readAll();
-    int size = buff.size();
+    unsigned int len = buff.size();
     unsigned char * cbuff = (unsigned char *)buff.data();
-    unsigned char * mapbuffer;
-    while (size >= 4)
+    unsigned int idx = 0;
+    while (len > 0)
     {
-        int id = toInt(&cbuff[0]);
-        if ((unsigned int)id == YAPIBOT_STATUS)
+        if (m_SizeToCopy > 0) //We still have payload to copy.
         {
-            int heading = toInt(&cbuff[4]);
-            int speedLeft = toInt(&cbuff[8]);
-            int speedRight = toInt(&cbuff[12]);
-            int campos = toInt(&cbuff[16]);
-            int range = toInt(&cbuff[20]);
-            int measLeft = toInt(&cbuff[24]);
-            int measRight = toInt(&cbuff[28]);
-            int accelX = toInt(&cbuff[32]);
-            int accelY = toInt(&cbuff[36]);
+            unsigned int copysz = (m_SizeToCopy<len)?m_SizeToCopy:len;
+            if ((copysz + m_PayloadIdx) > YAPIBOT_MAX_PL_SIZE)
+            {
+                //Something is very wrong here.
+                copysz = YAPIBOT_MAX_PL_SIZE - m_PayloadIdx;
+                qDebug() << "[NETWORK] Error during payload copy, payload will be truncated";
+            }
+            memcpy(&m_RxPayload[m_PayloadIdx],&cbuff[idx],copysz);
+            len -= copysz;
+            m_SizeToCopy -= copysz;
+            idx += copysz;
+            m_PayloadIdx += copysz;
+            if ((m_SizeToCopy == 0)||(m_PayloadIdx == YAPIBOT_MAX_PL_SIZE))
+            {
+                processCmd(m_CmdId, m_RxPayload, m_PayloadIdx);
+                m_SizeToCopy = 0;
+                m_PayloadIdx = 0;
+            }
+        }
+        else
+        {
+            header = (YapiBotHeader_t *)&cbuff[idx];
+            if (header->magicNumber == YAPIBOT_MAGIC_NUMBER)
+            {
+                idx += sizeof (YapiBotHeader_t);
+                len -= sizeof (YapiBotHeader_t);
+                m_PayloadIdx = 0;
+
+                if (header->payloadSize > YAPIBOT_MAX_PL_SIZE)
+                {
+                    qDebug() << "[NETWORK] Error max pl size reached for Rx payload, payload will be truncated (id = " << header->id<< " , size = " << header->payloadSize << " )";
+                    header->payloadSize = YAPIBOT_MAX_PL_SIZE;
+                }
+                m_SizeToCopy = header->payloadSize;
+                m_PayloadIdx = 0;
+                m_CmdId = header->id;
+                if (m_SizeToCopy == 0)
+                {
+                    processCmd(m_CmdId, NULL, 0);
+                }
+            }
+            else //We are not synchronized.
+            {
+                //Advance to the next byte.
+                len -= 1;
+                idx += 1;
+            }
+        }
+   }
+}
+
+void MainWindow::processCmd(YapiBotCmd_t cmd, unsigned char * payload, unsigned int plsize)
+{
+
+    switch (cmd)
+    {
+    case CmdInfoStatus:
+    {
+        if (plsize == sizeof (YapiBotStatus_t))
+        {
+            int heading = toInt(&payload[0]);
+            int speedLeft = toInt(&payload[4]);
+            int speedRight = toInt(&payload[8]);
+            int campos = toInt(&payload[12]);
+            int range = toInt(&payload[16]);
+            int measLeft = toInt(&payload[20]);
+            int measRight = toInt(&payload[24]);
+            int accelX = toInt(&payload[28]);
+            int accelY = toInt(&payload[32]);
             ui->speedLeft->setValue(abs(speedLeft));
             ui->speedRight->setValue(abs(speedRight));
             ui->heading->display(heading);
@@ -346,23 +404,29 @@ void MainWindow::cmdPktReceived()
             ui->measRight->setText(QString::number(measRight));
             m_AccelData->setValue(accelX,accelY);
             ui->AccelPlot->replot();
-            //qDebug() << "camPos:" << campos;
-            cbuff +=40;
-            size -= 40;
         }
-        else if ((unsigned int)id == YAPIBOT_PARAM)
+        else
         {
-            YapiBotParam_t param = (YapiBotParam_t)toInt(&cbuff[4]);
+            qDebug() << "[NETWORK] Error: CmdInfoStatus received with incorrect size !";
+        }
+        break;
+    }
+
+    case CmdInfoParam:
+    {
+        if (plsize == sizeof(YapiBotParamAnswer_t))
+        {
+            YapiBotParam_t param = (YapiBotParam_t)toInt(&payload[0]);
             int index = ui->paramlist->currentIndex();
             if (param == gParamList[index].param)
             {
                 if (gParamList[index].type == 'i')
                 {
-                    ui->paramval->setValue(toInt(&cbuff[8]));
+                    ui->paramval->setValue(toInt(&payload[4]));
                 }
                 else
                 {
-                    int val = toInt(&cbuff[8]);
+                    int val = toInt(&payload[4]);
                     ui->paramval->setValue(*((float*)&val));
                 }
                 //ui->paramval->setMinimum(gParamList[index].min);
@@ -370,46 +434,29 @@ void MainWindow::cmdPktReceived()
                 m_UpdateParam = true;
 
             }
-            cbuff+=12;
-            size -= 12;
-        }
-        else if ((unsigned int)id == YAPIBOT_MAP)
-        {
-            unsigned int sz = toInt(&cbuff[4]);
-            unsigned int sz_to_copy = sz * sz;
-            unsigned int copy_sz;
-            unsigned int copy_idx = 0;
-            mapbuffer = new unsigned char [sz_to_copy];
-            cbuff += 8;
-            size -= 8;
-            do
-            {
-                copy_sz = size>=sz_to_copy?sz_to_copy:size;
-                memcpy (&mapbuffer[copy_idx],cbuff,copy_sz);
-                copy_idx += copy_sz;
-                cbuff += copy_sz;
-                size -= copy_sz;
-                sz_to_copy -= copy_sz;
-                if (size <= 0)
-                {
-                    buff = m_CmdSocket->readAll();
-                    size = buff.size();
-                    cbuff = (unsigned char *)buff.data();
-                }
-            } while (sz_to_copy > 0);
-
-            Map * map = ui->uiMap;
-            map->updateMap (sz, sz, mapbuffer);
-
         }
         else
         {
-            cbuff ++;
-            size --;
+            qDebug() << "[NETWORK] Error: CmdInfoParam received with incorrect size !";
         }
+        break;
     }
 
+    case CmdInfoMap:
+    {
+        Map * map = ui->uiMap;
+        unsigned int mapSz = toInt(&payload[0]);
+        unsigned int offset = toInt(&payload[4]);
+        map->updateMap (mapSz, (unsigned char *)&payload[8], offset, plsize-8);
+        break;
+    }
 
+    default:
+    {
+        qDebug() << "[NETWORK] Error: unknown cmd received !";
+        break;
+    }
+    }
 }
 
 void MainWindow::TryToConnect()
@@ -425,48 +472,41 @@ void MainWindow::TryToConnect()
 
 }
 
-void MainWindow::sendCommand (YapiBotCmd_t cmd, char * payload, unsigned int pldsize)
+void MainWindow::sendCommand (YapiBotCmd_t cmd, unsigned char * payload, unsigned int plsize)
 {
     if (m_Connected)
     {
+        YapiBotHeader_t * header = (YapiBotHeader_t * )&m_CmdBuffer[0];
 
-        m_CmdBuffer[0] = (cmd >> 8)& 0xFF;
-        m_CmdBuffer[1] =  cmd & 0xFF;
-        if ((payload != NULL) && (pldsize > 0))
+        header->magicNumber = YAPIBOT_MAGIC_NUMBER;
+        header->id = cmd;
+        header->payloadSize = plsize;
+
+        if ((payload != NULL) && (header->payloadSize > 0))
         {
-            if (pldsize > 254)
+            if (header->payloadSize > YAPIBOT_MAX_PL_SIZE)
             {
                 qDebug() << "Warning command payload too long. payload is being truncated !!!";
-                pldsize = 254;
+                header->payloadSize = YAPIBOT_MAX_PL_SIZE;
             }
-            memcpy (&m_CmdBuffer[2],payload,pldsize);
-
-
+            memcpy (&m_CmdBuffer[sizeof(YapiBotHeader_t)],payload,header->payloadSize);
         }
-        m_CmdSocket->write(m_CmdBuffer,2 + pldsize);
+        m_CmdSocket->write((char *)m_CmdBuffer,sizeof(YapiBotHeader_t) + header->payloadSize);
     }
 }
 
 void MainWindow::on_CameraTild_valueChanged(int value)
 {
-    char payload[4];
-    fromInt(&payload[0],value);
+    unsigned char payload[4];
+    fromInt(value, &payload[0]);
     sendCommand(CmdMoveCam,payload,4);
 }
 
 
-int MainWindow::toInt (unsigned char * buff)
+int MainWindow::toInt (void * buff)
 {
-    int val0 = buff[0];
-    int val1 = buff[1];
-    int val2 = buff[2];
-    int val3 = buff[3];
-
-    val1 = val1 << 8;
-    val2 = val2 << 16;
-    val3 = val3 << 24;
-
-    int ret = val3 + val2 + val1 + val0;
+    int ret;
+    memcpy (&ret,buff,4);
     return (ret);
 }
 
@@ -477,31 +517,31 @@ void MainWindow::on_CompassCalib_clicked()
 
 void MainWindow::on_moveStraight_clicked()
 {
-    char payload [4];
+    unsigned char payload [4];
     bool ok;
     int dist = QInputDialog::getInt(this,QString("Enter distance"),QString("Distance:"),0,-10000,10000,10,&ok);
     if (ok)
     {
-        fromInt(&payload[0],dist);
+        fromInt(dist, &payload[0]);
         sendCommand(CmdMoveStraight,payload,4);
     }
 }
 
 void MainWindow::on_alignBearing_clicked()
 {
-    char payload [4];
+    unsigned char payload [4];
     bool ok;
     int bearing = QInputDialog::getInt(this,QString("Enter bearing"),QString("bearing:"),0,0,360,1,&ok);
     if (ok)
     {
-        fromInt(&payload[0],bearing);
+        fromInt(bearing, &payload[0]);
         sendCommand(CmdAlignBearing,payload,4);
     }
 }
 
 void MainWindow::on_moveBearing_clicked()
 {
-    char payload [8];
+    unsigned char payload [8];
     bool ok;
     int dist = QInputDialog::getInt(this,QString("Enter distance"),QString("Distance:"),0,-10000,10000,10,&ok);
     if (ok)
@@ -509,8 +549,8 @@ void MainWindow::on_moveBearing_clicked()
         int bearing = QInputDialog::getInt(this,QString("Enter bearing"),QString("bearing:"),0,0,360,1,&ok);
         if (ok)
         {
-            fromInt(&payload[0],dist);
-            fromInt(&payload[4],bearing);
+            fromInt(dist, &payload[0]);
+            fromInt(bearing, &payload[4]);
             sendCommand(CmdMoveBearing,payload,8);
         }
     }
@@ -518,12 +558,12 @@ void MainWindow::on_moveBearing_clicked()
 
 void MainWindow::on_rotate_clicked()
 {
-    char payload [4];
+    unsigned char payload [4];
     bool ok;
     int dist = QInputDialog::getInt(this,QString("Enter distance to rotate"),QString("Distance:"),0,-10000,10000,10,&ok);
     if (ok)
     {
-        fromInt(&payload[0],dist);
+        fromInt(dist, &payload[0]);
         sendCommand(CmdRotate,payload,4);
     }
 }
@@ -541,7 +581,7 @@ void MainWindow::on_speed_valueChanged(int value)
 
 void MainWindow::on_paramlist_currentIndexChanged(int index)
 {
-    char payload[4];
+    unsigned char payload[4];
 
     m_UpdateParam = false;
     ui->paramval->setMinimum(gParamList[index].min);
@@ -563,7 +603,7 @@ void MainWindow::on_paramlist_currentIndexChanged(int index)
         ui->paramval->setSingleStep(0.01);
     }
 
-    fromInt(&payload[0],gParamList[index].param);
+    fromInt(gParamList[index].param, &payload[0]);
 
     sendCommand(CmdGetParam, payload,4);
 }
@@ -571,25 +611,25 @@ void MainWindow::on_paramlist_currentIndexChanged(int index)
 void MainWindow::on_paramval_valueChanged(double arg1)
 {
 
-    char payload[8];
+    unsigned char payload[8];
 
        if(m_UpdateParam == true)
        {
             int index = ui->paramlist->currentIndex();
 
-            fromInt(&payload[0],gParamList[index].param);
+            fromInt(gParamList[index].param, &payload[0]);
 
             if (gParamList[index].type == 'i')
             {
                 int val;
                 val = arg1;
-                fromInt(&payload[4],val);
+                fromInt(val, &payload[4]);
             }
             else if (gParamList[index].type == 'f')
             {
                 float val;
                 val = arg1;
-                fromInt(&payload[4],*((int*)&val));
+                fromInt(*((int*)&val), &payload[4]);
             }
             sendCommand(CmdSetParam, payload,8);
        }

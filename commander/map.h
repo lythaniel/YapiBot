@@ -12,7 +12,7 @@ class Map : public QWidget
 public:
     explicit Map(QWidget *parent = 0);
 
-    void updateMap (unsigned int width, unsigned int height, unsigned char * map);
+    void updateMap (unsigned int size, unsigned char * chunk, unsigned int offset, unsigned int chunkSz);
 
 signals:
 

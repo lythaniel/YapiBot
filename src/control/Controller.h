@@ -20,9 +20,9 @@ public:
 	CController();
 	~CController();
 
-	void CmdPckReceived (char * buffer, unsigned int size);
+	void CmdPckReceived (YapiBotCmd_t id, char * buffer, unsigned int size);
 
-	int toInt (char * buff);
+	//int toInt (char * buff);
 
 	void run (void *);
 

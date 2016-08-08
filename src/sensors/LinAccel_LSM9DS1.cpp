@@ -106,7 +106,7 @@ sLinAccel CLinAccel_LSM9DS1::getAccel (void)
 			ret.y = sx;
 			ret.z = sz;
 		}
-		printf ("[LSM9DS1 XL] Acceleration: x= %d | y = %d | z = %d\n", ret.x, ret.y, ret.z);
+		//printf ("[LSM9DS1 XL] Acceleration: x= %d | y = %d | z = %d\n", ret.x, ret.y, ret.z);
 	}
 	return ret;
 

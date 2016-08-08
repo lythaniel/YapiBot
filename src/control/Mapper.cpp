@@ -11,18 +11,14 @@
 #include <cstring> //for memset
 #include <cmath> //for cos/sin
 #include "Network.h"
+#include "Utils.h"
 
 #define PI 3.14159265
-#define MAP_HEADER_SIZE 8 //Size of the map header to send over the network
+
 
 CMapper::CMapper()
 {
-	m_Map = new unsigned char [MAP_SIZE*MAP_SIZE + MAP_HEADER_SIZE];
-	int * mapheader = (int *)m_Map;
-	*mapheader = YAPIBOT_MAP;
-	int * mapsize = (int *)(m_Map +4);
-	*mapsize = MAP_SIZE;
-
+	m_Map = new unsigned char [MAP_SIZE*MAP_SIZE];
 	reset();
 }
 
@@ -36,7 +32,7 @@ CMapper::~CMapper()
 
 void CMapper::reset (void)
 {
-	memset (m_Map+MAP_HEADER_SIZE,MAP_AREA_UNKNOWN,MAP_SIZE*MAP_SIZE);
+	memset (m_Map,MAP_AREA_UNKNOWN,MAP_SIZE*MAP_SIZE);
 	m_PosX = MAP_SIZE/2;
 	m_PosY = MAP_SIZE/2;
 	updateMapTile(0,0,0xFF);
@@ -97,8 +93,8 @@ void CMapper::updateMapTile (unsigned int x, unsigned int y, unsigned char val)
 {
 	if ((x < MAP_SIZE)&&(y < MAP_SIZE))
 	{
-		m_Map[MAP_HEADER_SIZE+((y * MAP_SIZE) + x)] = val;
-		fprintf (stdout,"updating map @ %d\n",MAP_HEADER_SIZE+((y * MAP_SIZE) + x));
+		m_Map[((y * MAP_SIZE) + x)] = val;
+		fprintf (stdout,"updating map @ %d\n",((y * MAP_SIZE) + x));
 	}
 }
 
@@ -118,6 +114,23 @@ void CMapper::polar2cartesian (unsigned int direction, unsigned int distance, in
 
 void CMapper::sendMap(void)
 {
-	CNetwork::getInstance()->sendCmdPck (m_Map, MAP_SIZE*MAP_SIZE + MAP_HEADER_SIZE);
+	unsigned char payload [YAPIBOT_MAX_PL_SIZE];
+	unsigned int mapLen = MAP_SIZE;
+	unsigned int lenRemaining = MAP_SIZE*MAP_SIZE;
+	unsigned int idx = 0;
+	unsigned int size;
+
+	while (lenRemaining > 0)
+	{
+		Utils::fromInt(mapLen,&payload[0]); //Total map len.
+		Utils::fromInt(idx,&payload[4]); //Chunck offset.
+
+		size = (lenRemaining>(YAPIBOT_MAX_PL_SIZE-8))?(YAPIBOT_MAX_PL_SIZE-8):lenRemaining;
+		memcpy (&payload[8],&m_Map[idx],size);
+		CNetwork::getInstance()->sendCmdPck (CmdInfoMap, payload, size+8);
+		lenRemaining -= size;
+		idx += size;
+	}
+
 }
 

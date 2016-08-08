@@ -30,4 +30,6 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
-LIBS += -lvlc-qt -lvlc-qt-widgets -lavcodec -lavutil -lswscale -lopencv_core -lopencv_imgproc
+LIBS +=  -lvlc-qt -lvlc-qt-widgets -lavcodec -lavutil -lswscale #-lopencv_core -lopencv_imgproc
+LIBS += /usr/local/lib/libopencv_core.so
+LIBS += /usr/local/lib/libopencv_imgproc.so

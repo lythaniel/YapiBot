@@ -11,22 +11,23 @@ Map::Map(QWidget *parent) :
     setAutoFillBackground(true);
 }
 
-void Map::updateMap (unsigned int width, unsigned int height, unsigned char * map)
+void Map::updateMap (unsigned int size,  unsigned char * chunk, unsigned int offset, unsigned int chunkSz)
 {
-    if ((width != m_Width)||(height != m_Height))
+    if ((size != m_Width))
     {
         if (m_Map != NULL)
         {
             delete m_Map;
         }
-        m_Width = width;
-        m_Height = height;
+        m_Width = size;
+        m_Height = size;
 
         m_Map = new unsigned char [m_Width * m_Height];
+        memset (m_Map,0xFF,m_Width * m_Height);
     }
     if (m_Map != NULL)
     {
-        memcpy (m_Map,map,m_Width * m_Height);
+        memcpy (&m_Map[offset],chunk,chunkSz);
     }
 
     this->repaint();
@@ -34,10 +35,10 @@ void Map::updateMap (unsigned int width, unsigned int height, unsigned char * ma
 
 void Map::paintEvent(QPaintEvent * /* event */)
 {
-   int pixel_height;
-   int pixel_width;
-   int pixel_x = 0;
-   int pixel_y = 0;
+   unsigned int pixel_height;
+   unsigned int pixel_width;
+   unsigned int pixel_x = 0;
+   unsigned int pixel_y = 0;
 
    QPainter painter(this);
    painter.setPen(m_Pen);
@@ -53,10 +54,10 @@ void Map::paintEvent(QPaintEvent * /* event */)
        {
            pixel_width = this->width() / m_Width;
        }
-       for (int y = 0; y < m_Height; y++)
+       for (unsigned int y = 0; y < m_Height; y++)
        {
            pixel_x = 0;
-           for (int x = 0; x < m_Width; x++)
+           for (unsigned int x = 0; x < m_Width; x++)
            {
                QColor color (m_Map[x+(y*m_Width)],m_Map[x+(y*m_Width)],m_Map[x+(y*m_Width)]);
                painter.fillRect(pixel_x, pixel_y, pixel_width, pixel_height, color);

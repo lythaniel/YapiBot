@@ -5,6 +5,7 @@
 
 #include "CallBack.h"
 #include "Singleton.h"
+#include "YapiBotCmd.h"
 
 #define CMDBUFFER_SIZE 256
 
@@ -20,13 +21,13 @@ public:
 
 
 
-	DECLARE_REG_FUNCTION_CB_2(regCmdReceived, m_pRxCb)
+	DECLARE_REG_FUNCTION_CB_3(regCmdReceived, m_pRxCb)
 
 
 	void start(void);
 	void stop (void);
 
-	void sendCmdPck (unsigned char * buffer, unsigned int size);
+	void sendCmdPck (YapiBotCmd_t id, unsigned char * payload, unsigned int size);
 	
 	void sendVideoPacket (unsigned char * buffer, unsigned int size);
 
@@ -38,7 +39,7 @@ public:
 	bool isVideoConnected (void) {return m_VideoClientConnected;}
 
 private:
-	Callback2base<char *, unsigned int> *  m_pRxCb;
+	Callback3base<YapiBotCmd_t, char *, unsigned int> *  m_pRxCb;
 	CThread * m_pVideoServerThread;
 	CMutex * m_pVideoSockMutex;
 	
@@ -61,7 +62,10 @@ private:
 
 	CThread * m_pRxCmdThread;
 
-	char m_RxBuffer[CMDBUFFER_SIZE];
+	char * m_pCmdRxBuffer;
+	char * m_pCmdTxBuffer;
+	YapiBotHeader_t * m_pCmdTxHeader;
+	char * m_pCmdTxPayload;
 
 	short m_VideoPort;
 	short m_CmdPort;

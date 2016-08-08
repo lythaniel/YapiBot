@@ -3,6 +3,7 @@
 #include "Motors.h"
 #include "Network.h"
 #include "Settings.h"
+#include "Utils.h"
 
 #define PWM_GPIO_R_PWM 23
 #define PWM_GPIO_R_FW 24
@@ -545,15 +546,15 @@ void CMotors::setParameter (YapiBotParam_t param, char * buffer, unsigned int si
 	switch (param)
 	{
 		case MtrParamSpeedConv:
-			m_SpeedConv = toFloat (&buffer[0]);
+			m_SpeedConv = Utils::toFloat (&buffer[0]);
 			CSettings::getInstance()->setFloat("MOTORS", "Speed conversion", m_SpeedConv);
 			break;
 		case MtrParamSpeedErrGain:
-			m_SpeedErrGain = toFloat (&buffer[0]);
+			m_SpeedErrGain = Utils::toFloat (&buffer[0]);
 			CSettings::getInstance()->setFloat("MOTORS", "Speed error gain", m_SpeedErrGain);
 			break;
 		case MtrParamAccErrGain:
-			m_AccErrGain = toFloat (&buffer[0]);
+			m_AccErrGain = Utils::toFloat (&buffer[0]);
 			CSettings::getInstance()->setFloat("MOTORS", "Acceleration error gain", m_AccErrGain);
 			break;
 		default:
@@ -561,39 +562,30 @@ void CMotors::setParameter (YapiBotParam_t param, char * buffer, unsigned int si
 			break;
 	}
 }
+
 void CMotors::getParameter (YapiBotParam_t param)
 {
 	YapiBotParamAnswer_t answer;
-	answer.id = YAPIBOT_PARAM;
-	answer.param = param;
+
+	Utils::fromInt((int)param, &answer.param);
+
 	switch (param)
 	{
 		case MtrParamSpeedConv:
-			answer.val = *((int*)&m_SpeedConv);
+			Utils::fromFloat (m_SpeedConv, &answer.val);
 			break;
 		case MtrParamSpeedErrGain:
-			answer.val = *((int*)&m_SpeedErrGain);
+			Utils::fromFloat (m_SpeedErrGain, &answer.val);
 			break;
 		case MtrParamAccErrGain:
-			answer.val = *((int*)&m_AccErrGain);
+			Utils::fromFloat (m_AccErrGain, &answer.val);
 			break;
 
 		default:
 			fprintf (stderr, "Unknown motor parameter !");
 			return;
 	}
-	CNetwork::getInstance()->sendCmdPck ((unsigned char *)&answer, sizeof(YapiBotParamAnswer_t));
+	CNetwork::getInstance()->sendCmdPck (CmdInfoParam, (unsigned char *)&answer, sizeof(YapiBotParamAnswer_t));
 }
 
-int CMotors::toInt (char * buff)
-{
-	int ret = (buff [0] << 24) + (buff [1] << 16) + (buff [2] << 8) + buff [3];
-	return (ret);
-}
 
-float CMotors::toFloat (char * buff)
-{
-	int val = (buff [0] << 24) + (buff [1] << 16) + (buff [2] << 8) + buff [3];
-	float ret = *((float*)&val);
-	return (ret);
-}

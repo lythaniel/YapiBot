@@ -184,7 +184,7 @@ private:
 #define DECLARE_REG_FUNCTION_CB_3(name, cb) \
 template <class C,typename param1,typename param2, typename param3> \
 void name (C* instance, void (C::*method)(param1, param2, param3)) { \
-	cb = new Callback2<C,param1,param2, param3> (instance, method); \
+	cb = new Callback3<C,param1,param2, param3> (instance, method); \
 }
 
 

@@ -9,6 +9,9 @@
 #define YAPIBOTCMD_H_
 
 
+#define YAPIBOT_MAGIC_NUMBER 0x1A2B3C4D
+#define YAPIBOT_MAX_PL_SIZE 1024
+
 #define CMD_TYPE_MASK 0xF000
 #define CMD_TYPE_MOVE 0x1000
 #define CMD_TYPE_CMD 0x2000
@@ -21,8 +24,13 @@
 #define CAMERA_PARAM 0x2000
 #define IMGPROC_PARAM 0x3000
 
+#define CMD_TYPE_STATUS 0x80000000
+#define CMD_TYPE_PARAM_ANSWER 0x80010000
+#define CMD_TYPE_MAP 0x80020000
+
 
 typedef enum {
+	//From controller to Yapibot
 	CmdMoveStop = CMD_TYPE_MOVE | 0,
 	CmdMoveFwd = CMD_TYPE_MOVE | 1,
 	CmdMoveRear = CMD_TYPE_MOVE | 2,
@@ -38,11 +46,19 @@ typedef enum {
 	CmdRefrehMap = CMD_TYPE_CMD | 5,
 	CmdSetParam = CMD_TYPE_PARAM | 0,
 	CmdGetParam = CMD_TYPE_PARAM | 1,
+
+	//From Yapibot to Controler.
+	CmdInfoStatus = CMD_TYPE_STATUS,
+	CmdInfoParam = CMD_TYPE_PARAM_ANSWER,
+	CmdInfoMap = CMD_TYPE_MAP,
+
 } YapiBotCmd_t;
 
 
 
 typedef enum {
+
+
 	CtrlParamColDist = CONTROL_PARAM | 0x00,  			//define the collision distance. Integer.
 	CtrlParamMvErrGain = CONTROL_PARAM | 0x01,			//define the error gain while moving. Integer.
 	CtrlParamBearingErrGain = CONTROL_PARAM | 0x02, 	//define the error gain while aligning on a bearing. Integer.
@@ -57,22 +73,15 @@ typedef enum {
 	CamParamsharpness = CAMERA_PARAM | 0x03,            //define the camera sharpness, Integer
 	CamParamIso = CAMERA_PARAM | 0x04,             		//define the camera ISO, Integer
 
+
+
+
 } YapiBotParam_t;
 
 
-typedef enum
-{
-	InfoStatus = 0xDEADBEEF,
-	InfoMap = 0xBAADAA55,
-	InfoParam = 0x00000
-} YapiBotInfo_t;
 
-#define YAPIBOT_STATUS 0xDEADBEFF
-#define YAPIBOT_PARAM 0x0000000
-#define YAPIBOT_MAP 0xBAADAA55
 
 typedef struct {
-	int id;
 	int heading;
 	int speed_left;
 	int speed_right;
@@ -85,12 +94,15 @@ typedef struct {
 } YapiBotStatus_t;
 
 typedef struct {
-	int id;
 	YapiBotParam_t param;
 	int val;
 } YapiBotParamAnswer_t;
 
-
+typedef struct {
+	int magicNumber;
+	YapiBotCmd_t id;
+	int payloadSize;
+} YapiBotHeader_t;
 
 
 

@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Settings.h"
+#include "Utils.h"
 
 #define CONTROLLER_PERIOD 200
 
@@ -45,7 +46,7 @@ m_BearingErrGain(BEARING_ERR_GAIN),
 m_BearingErrLim(BEARING_ERR_LIM),
 m_BearingGoodCntLim(BEARING_GOOD_CNT_LIMIT)
 {
-	m_Status.id = YAPIBOT_STATUS;
+
 	m_Status.speed_left = 0;
 	m_Status.speed_right = 0;
 	m_Status.camera_pos = 0;
@@ -95,6 +96,7 @@ void CController::run(void *)
 		m_Status.accel_x = accel.x;
 		m_Status.accel_y = accel.y;
 
+
 		m_Lock.get();
 		switch (m_State)
 		{
@@ -120,7 +122,20 @@ void CController::run(void *)
 		}
 		m_Lock.release();
 
-		CNetwork::getInstance()->sendCmdPck ((unsigned char *)&m_Status, sizeof(YapiBotStatus_t));
+		YapiBotStatus_t TxStatus;
+
+		//The following copy is useless if both the processor are little-endian.
+		Utils::fromInt(m_Status.speed_left, &TxStatus.speed_left);
+		Utils::fromInt(m_Status.speed_right, &TxStatus.speed_right);
+		Utils::fromInt(m_Status.camera_pos, &TxStatus.camera_pos);
+		Utils::fromInt(m_Status.heading, &TxStatus.heading);
+		Utils::fromInt(m_Status.range , &TxStatus.range);
+		Utils::fromInt(m_Status.meas_left, &TxStatus.meas_left);
+		Utils::fromInt(m_Status.meas_right , &TxStatus.meas_right);
+		Utils::fromInt(m_Status.accel_x , &TxStatus.accel_x);
+		Utils::fromInt(m_Status.accel_y , &TxStatus.accel_y);
+
+		CNetwork::getInstance()->sendCmdPck (CmdInfoStatus,(unsigned char *)&TxStatus, sizeof(YapiBotStatus_t));
 	}
 
 }
@@ -560,34 +575,33 @@ void CController::refreshMap (void)
 	m_Lock.release();
 }
 
-void CController::CmdPckReceived (char * buffer, unsigned int size) {
-	YapiBotCmd_t cmd;
+void CController::CmdPckReceived (YapiBotCmd_t cmd, char * buffer, unsigned int size)
+{
 	YapiBotCmd_t cmdType;
-	if ((buffer != NULL)&&(size > 1)) //Need at least 2 bytes for the cmd.
-	{
-		cmd = (YapiBotCmd_t)((buffer[0] << 8) | (buffer[1])); //Cmd is MSB.
-		cmdType  = YapiBotCmd_t(cmd & CMD_TYPE_MASK);
-		switch (cmdType)
-		{
-		case CMD_TYPE_MOVE:
-			processCmdMove(cmd,&buffer[2],size-2);
-			break;
-		case CMD_TYPE_CMD:
-			processCmd(cmd,&buffer[2],size-2);
-			break;
-		case CMD_TYPE_SCRIPT:
-			CScriptEngine::getInstance()->RunScript("YapiBot.py");
-			break;
-		case CMD_TYPE_PARAM:
-			fprintf(stderr,"received param cmd !!!\n");
-			processCmdParam(cmd,&buffer[2],size-2);
-			break;
-		default:
-			fprintf(stderr,"Unknown command received !!!\n");
-			break;
-		}
 
+
+	cmdType  = YapiBotCmd_t(cmd & CMD_TYPE_MASK);
+	switch (cmdType)
+	{
+	case CMD_TYPE_MOVE:
+		processCmdMove(cmd,buffer,size);
+		break;
+	case CMD_TYPE_CMD:
+		processCmd(cmd,buffer,size);
+		break;
+	case CMD_TYPE_SCRIPT:
+		CScriptEngine::getInstance()->RunScript("YapiBot.py");
+		break;
+	case CMD_TYPE_PARAM:
+		fprintf(stderr,"received param cmd !!!\n");
+		processCmdParam(cmd,buffer,size);
+		break;
+	default:
+		fprintf(stderr,"Unknown command received !!!\n");
+		break;
 	}
+
+
 }
 
 void CController::processCmdMove (YapiBotCmd_t cmd, char * buffer, unsigned int size)
@@ -605,7 +619,7 @@ void CController::processCmdMove (YapiBotCmd_t cmd, char * buffer, unsigned int 
 	m_Lock.release();
 	if (size == 4)
 	{
-		speed = toInt (&buffer[0]);
+		speed = Utils::toInt (&buffer[0]);
 	}
 	else
 	{
@@ -647,8 +661,8 @@ void CController::processCmdMove (YapiBotCmd_t cmd, char * buffer, unsigned int 
 			fprintf(stdout,"Incorrect payload size for CmdMove\n");
 			break;
 		}
-		x = toInt (&buffer[0]);
-		y = toInt (&buffer[4]);
+		x = Utils::toInt (&buffer[0]);
+		y = Utils::toInt (&buffer[4]);
 		fprintf(stdout,"Move x=%d y=%d\n",x , y);
 		CMotors::getInstance()->move (x,y);
 
@@ -659,7 +673,7 @@ void CController::processCmdMove (YapiBotCmd_t cmd, char * buffer, unsigned int 
 				fprintf(stdout,"Incorrect payload size for CmdMoveCam\n");
 				break;
 			}
-			x = toInt (&buffer[0]);
+			x = Utils::toInt (&buffer[0]);
 			fprintf(stdout,"Camera Move pos=%d\n",x);
 			CMotors::getInstance()->moveCam (x);
 
@@ -692,23 +706,23 @@ void CController::processCmd (YapiBotCmd_t cmd, char * buffer, unsigned int size
 		break;
 
 	case CmdMoveStraight:
-		dist = toInt (&buffer[0]);
+		dist = Utils::toInt (&buffer[0]);
 		moveStraight (dist);
 		break;
 
 	case CmdAlignBearing:
 		m_BearingGoodCnt = 0;
-		bearing = toInt (&buffer[0]);
+		bearing = Utils::toInt (&buffer[0]);
 		alignBearing (bearing);
 		break;
 
 	case CmdMoveBearing:
-		dist = toInt (&buffer[0]);
-		bearing = toInt (&buffer[4]);
+		dist = Utils::toInt (&buffer[0]);
+		bearing = Utils::toInt (&buffer[4]);
 		moveBearing(bearing,dist);
 		break;
 	case CmdRotate:
-			dist = toInt (&buffer[0]);
+			dist = Utils::toInt (&buffer[0]);
 			rotate(dist);
 			break;
 	case CmdRefrehMap:
@@ -722,8 +736,7 @@ void CController::processCmd (YapiBotCmd_t cmd, char * buffer, unsigned int size
 
 void CController::processCmdParam (YapiBotCmd_t cmd, char * buffer, unsigned int size)
 {
-	//YapiBotParam_t param = (YapiBotParam_t)((buffer[0] << 8) | (buffer[1]));
-	YapiBotParam_t param = (YapiBotParam_t)toInt(&buffer[0]);
+	YapiBotParam_t param = (YapiBotParam_t)Utils::toInt(&buffer[0]);
 	printf("ProcessCmdParam with param = 0x%x\n", param);
 
 	switch (param & PARAM_MASK)
@@ -777,23 +790,23 @@ void CController::setParameter (YapiBotParam_t param, char * buffer, unsigned in
 	switch (param)
 	{
 		case CtrlParamColDist:
-			m_CollisionDist = toInt (&buffer[0]);
+			m_CollisionDist = Utils::toInt (&buffer[0]);
 			CSettings::getInstance()->setInt("CONTROLER", "Collision distance", m_CollisionDist);
 			break;
 		case CtrlParamMvErrGain:
-			m_MvtErrGain = toInt (&buffer[0]);
+			m_MvtErrGain = Utils::toInt (&buffer[0]);
 			CSettings::getInstance()->setInt("CONTROLER", "Move straight error gain", m_MvtErrGain);
 			break;
 		case CtrlParamBearingErrGain:
-			m_BearingErrGain = toInt (&buffer[0]);
+			m_BearingErrGain = Utils::toInt (&buffer[0]);
 			CSettings::getInstance()->setInt("CONTROLER", "Bearing error gain", m_BearingErrGain);
 			break;
 		case CtrlParamBearingErrLim:
-			m_BearingErrLim = toInt (&buffer[0]);
+			m_BearingErrLim = Utils::toInt (&buffer[0]);
 			CSettings::getInstance()->setInt("CONTROLER", "Bearing error limit", m_BearingErrLim);
 			break;
 		case CtrlParamBearingGoodCnt:
-			m_BearingGoodCntLim = toInt (&buffer[0]);
+			m_BearingGoodCntLim = Utils::toInt (&buffer[0]);
 			CSettings::getInstance()->setInt("CONTROLER", "Bearing good count limit",m_BearingGoodCntLim);
 			break;
 		default:
@@ -805,30 +818,30 @@ void CController::setParameter (YapiBotParam_t param, char * buffer, unsigned in
 void CController::getParameter (YapiBotParam_t param)
 {
 	YapiBotParamAnswer_t answer;
-	answer.id = YAPIBOT_PARAM;
-	answer.param = param;
+	Utils::fromInt((int)param, &answer.param);
+
 	switch (param)
 	{
 		case CtrlParamColDist:
-			answer.val = m_CollisionDist;
+			Utils::fromInt (m_CollisionDist, &answer.val);
 			break;
 		case CtrlParamMvErrGain:
-			answer.val = m_MvtErrGain;
+			Utils::fromInt (m_MvtErrGain, &answer.val);
 			break;
 		case CtrlParamBearingErrGain:
-			answer.val = m_BearingErrGain;
+			Utils::fromInt (m_BearingErrGain, &answer.val);
 			break;
 		case CtrlParamBearingErrLim:
-			answer.val = m_BearingErrLim;
+			Utils::fromInt (m_BearingErrLim, &answer.val);
 			break;
 		case CtrlParamBearingGoodCnt:
-			answer.val = m_BearingGoodCntLim;
+			Utils::fromInt (m_BearingGoodCntLim, &answer.val);
 			break;
 		default:
 			fprintf (stderr, "Unknown controller parameter !");
 			return;
 	}
-	CNetwork::getInstance()->sendCmdPck ((unsigned char *)&answer, sizeof(YapiBotParamAnswer_t));
+	CNetwork::getInstance()->sendCmdPck (CmdInfoParam, (unsigned char *)&answer, sizeof(YapiBotParamAnswer_t));
 }
 
 void CController::EventCallback (Event_t evt, int data1, void * data2)
@@ -837,10 +850,10 @@ void CController::EventCallback (Event_t evt, int data1, void * data2)
 }
 
 
-int CController::toInt (char * buff)
+/*int CController::toInt (char * buff)
 {
 	int ret = (buff [0] << 24) + (buff [1] << 16) + (buff [2] << 8) + buff [3];
 	return (ret);
-}
+}*/
 
 

@@ -44,8 +44,8 @@ private:
 	void ctrlLeftSpeed (int speed);
 	void ctrlRightSpeed (int speed);
 
-	int toInt (char * buff);
-	float toFloat (char * buff);
+	//int toInt (char * buff);
+	//float toFloat (char * buff);
 
 	int m_Pi;
 
