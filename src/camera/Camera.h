@@ -1,3 +1,15 @@
+/*
+ * Camera.h
+ *
+ * Copyright (C) 2016 Cyrille Potereau
+ *
+ * based on original work from Chris Cummings:
+ * http://robotblogging.blogspot.fr/2013/10/an-efficient-and-simple-c-api-for.html
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 #pragma once
 
 #include "mmalincludes.h"

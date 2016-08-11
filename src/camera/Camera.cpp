@@ -1,9 +1,15 @@
 /*
-Chris Cummings
-This is wraps up the camera system in a simple StartCamera, StopCamera and ReadFrame api to read 
-data from the feed. Based on parts of raspivid, and the work done by Pierre Raus at 
-http://raufast.org/download/camcv_vid0.c to get the camera feeding into opencv. It 
-*/
+ * Camera.cpp
+ *
+ * Copyright (C) 2016 Cyrille Potereau
+ *
+ * based on original work from Chris Cummings:
+ * http://robotblogging.blogspot.fr/2013/10/an-efficient-and-simple-c-api-for.html
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
 
 #include "Camera.h"
 #include <stdio.h>

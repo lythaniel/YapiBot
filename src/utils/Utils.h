@@ -1,8 +1,10 @@
 /*
  * Utils.h
  *
- *  Created on: 7 août 2016
- *      Author: lythaniel
+ * Copyright (C) 2016 Cyrille Potereau
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
  */
 
 #ifndef UTILS_H_

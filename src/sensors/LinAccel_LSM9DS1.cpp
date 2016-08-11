@@ -1,8 +1,10 @@
 /*
  * LinAccelLSM9DS1.cpp
  *
- *  Created on: 2 août 2016
- *      Author: lythaniel
+ * Copyright (C) 2016 Cyrille Potereau
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
  */
 
 #include <LinAccel_LSM9DS1.h>

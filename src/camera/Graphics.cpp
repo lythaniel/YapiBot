@@ -1,3 +1,16 @@
+/*
+ * Graphics.h
+ *
+ * Copyright (C) 2016 Cyrille Potereau
+ *
+ * based on original work from Chris Cummings:
+ * http://robotblogging.blogspot.fr/2013/10/gpu-accelerated-camera-processing-on.html
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
+
+
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>

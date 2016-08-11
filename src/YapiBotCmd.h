@@ -1,8 +1,10 @@
 /*
  * YapiBotCmd.h
  *
- *  Created on: 6 déc. 2015
- *      Author: lythaniel
+ * Copyright (C) 2016 Cyrille Potereau
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
  */
 
 #ifndef YAPIBOTCMD_H_

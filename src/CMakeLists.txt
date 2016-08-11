@@ -11,7 +11,7 @@ find_package( PythonLibs REQUIRED)
 find_package( Threads REQUIRED )
 
 
-#target_compile_options(PUBLIC PoBot "-pthread")
+#target_compile_options(PUBLIC YapiBot "-pthread")
 SET(CMAKE_CXX_FLAGS_DEBUG "-lpthread -g -o0 -Wno-write-strings") 
 SET(CMAKE_CXX_FLAGS_RELEASE "-lpthread -o3 -Wno-write-strings")
 
@@ -97,11 +97,11 @@ add_executable(
 	camera/Graphics.cpp
 	camera/ImageProcessing.cpp
 	camera/VideoStreamer.cpp
+	camera/Encoder.cpp
 	control/EventObserver.cpp
 	control/Mapper.cpp
 	control/Controller.cpp
 	motors/Motors.cpp
-	motors/Encoder.cpp
 	script/ScriptEngine.cpp
 	script/PythonApi.cpp
 	script/PythonBinding.cpp

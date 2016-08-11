@@ -1,12 +1,14 @@
 /*
- * Compass.h
+ * Compass_HMC5883L.h
  *
- *  Created on: 17 déc. 2014
- *      Author: lythaniel
+ * Copyright (C) 2016 Cyrille Potereau
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
  */
 
-#ifndef COMPASS_HMC588_H_
-#define COMPASS_HMC588_H_
+#ifndef COMPASS_HMC5883L_H_
+#define COMPASS_HMC5883L_H_
 
 
 #include "Compass.h"
@@ -42,4 +44,4 @@ private:
 
 };
 
-#endif /* COMPASS_H_ */
+#endif /* COMPASS_HMC5883L_H_ */

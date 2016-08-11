@@ -1,8 +1,10 @@
 /*
- * RangeFinder.cpp
+ * RangeFinder_2Y0A21.cpp
  *
- *  Created on: 1 janv. 2015
- *      Author: lythaniel
+ * Copyright (C) 2016 Cyrille Potereau
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
  */
 
 #include "RangeFinder_2Y0A21.h"
