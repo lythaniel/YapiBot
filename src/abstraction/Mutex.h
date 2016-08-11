@@ -10,7 +10,8 @@
 #ifndef MUTEX_H_
 #define MUTEX_H_
 
-#include<pthread.h>
+#include "YapiBotTypes.h"
+#include <pthread.h>
 
 #define MUTEX_TIMEOUT_DONTWAIT 0
 #define MUTEX_TIMEOUT_FOREVER -1
@@ -21,7 +22,7 @@ public:
 	CMutex ();
 	~CMutex ();
 
-	bool get(int timeout = MUTEX_TIMEOUT_FOREVER);
+	bool get(int32_t timeout = MUTEX_TIMEOUT_FOREVER);
 	void release(void);
 
 private:

@@ -20,7 +20,7 @@
 
 CMapper::CMapper()
 {
-	m_Map = new unsigned char [MAP_SIZE*MAP_SIZE];
+	m_Map = new uint8_t [MAP_SIZE*MAP_SIZE];
 	reset();
 }
 
@@ -48,11 +48,11 @@ void CMapper::reset (void)
 }
 
 
-void CMapper::update(unsigned int direction, unsigned int distance)
+void CMapper::update(uint32_t direction, uint32_t distance)
 {
-	int x,y,lx,ly;
-	int delta_x, delta_y;
-	float error, delta_error;
+	int32_t x,y,lx,ly;
+	int32_t delta_x, delta_y;
+	float32_t error, delta_error;
 
 	//Transform coordinate from polar to cartesian
 	polar2cartesian (direction, distance, x, y);
@@ -64,8 +64,8 @@ void CMapper::update(unsigned int direction, unsigned int distance)
 	/*error = 0;
 	delta_x = m_PosX - x;
 	delta_y = m_PosY - y;
-	int dir_x = delta_x>=0?1:-1;
-	int dir_y = delta_y>=0?1:-1;
+	int32_t dir_x = delta_x>=0?1:-1;
+	int32_t dir_y = delta_y>=0?1:-1;
 
 	delta_error = abs(delta_y/delta_x);
 
@@ -91,7 +91,7 @@ void CMapper::update(unsigned int direction, unsigned int distance)
 
 
 
-void CMapper::updateMapTile (unsigned int x, unsigned int y, unsigned char val)
+void CMapper::updateMapTile (uint32_t x, uint32_t y, uint8_t val)
 {
 	if ((x < MAP_SIZE)&&(y < MAP_SIZE))
 	{
@@ -100,14 +100,14 @@ void CMapper::updateMapTile (unsigned int x, unsigned int y, unsigned char val)
 	}
 }
 
-void CMapper::polar2cartesian (unsigned int direction, unsigned int distance, int &x, int &y)
+void CMapper::polar2cartesian (uint32_t direction, uint32_t distance, int32_t &x, int32_t &y)
 {
 	//the direction is given according the heading from the compass, so 0° is "north" 90° "east" 180° "south" and 270° "west"
 	// so we need to convert to radian.
-	float dir_rad = direction * PI / 180;
+	float32_t dir_rad = direction * PI / 180;
 	//As we are going to turn around the coordinate system we need do not use the direct mapping from cos to X axis and sin to Y axis.
-	float fx = sin (dir_rad) * distance;
-	float fy = - cos (dir_rad) * distance;
+	float32_t fx = sin (dir_rad) * distance;
+	float32_t fy = - cos (dir_rad) * distance;
 
 	//Normalise according to the tile size
 	x = fx / MAP_TILE_SIZE;
@@ -116,11 +116,11 @@ void CMapper::polar2cartesian (unsigned int direction, unsigned int distance, in
 
 void CMapper::sendMap(void)
 {
-	unsigned char payload [YAPIBOT_MAX_PL_SIZE];
-	unsigned int mapLen = MAP_SIZE;
-	unsigned int lenRemaining = MAP_SIZE*MAP_SIZE;
-	unsigned int idx = 0;
-	unsigned int size;
+	uint8_t payload [YAPIBOT_MAX_PL_SIZE];
+	uint32_t mapLen = MAP_SIZE;
+	uint32_t lenRemaining = MAP_SIZE*MAP_SIZE;
+	uint32_t idx = 0;
+	uint32_t size;
 
 	while (lenRemaining > 0)
 	{

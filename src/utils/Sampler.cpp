@@ -10,7 +10,7 @@
 #include "Sampler.h"
 #include <stdio.h>
 
-CSampler::CSampler(unsigned int period) :
+CSampler::CSampler(uint32_t period) :
 m_Period(period)
 {
 	sem_init (&m_Sem, 0, 0);

@@ -33,7 +33,7 @@ CSettings::~CSettings() {
 	}
 }
 
-bool CSettings::getBoolean (char * group,char * key, bool defaultValue)
+bool CSettings::getBoolean (const char * group, const char * key, bool defaultValue)
 {
 	GError *error = NULL;
 	bool ret;
@@ -46,10 +46,10 @@ bool CSettings::getBoolean (char * group,char * key, bool defaultValue)
 	return ret;
 }
 
-int CSettings::getInt (char * group,char * key, int defaultValue)
+int32_t CSettings::getInt (const char * group, const char * key, int32_t defaultValue)
 {
 	GError *error = NULL;
-	int ret;
+	int32_t ret;
 	ret = g_key_file_get_integer (m_KeyFile, group, key, &error);
 	if (error != NULL)
 	{
@@ -60,7 +60,7 @@ int CSettings::getInt (char * group,char * key, int defaultValue)
 
 }
 
-float CSettings::getFloat (char * group,char * key, float defaultValue)
+float32_t CSettings::getFloat (const char * group, const char * key, float32_t defaultValue)
 {
 	GError *error = NULL;
 	double ret;
@@ -74,7 +74,7 @@ float CSettings::getFloat (char * group,char * key, float defaultValue)
 
 }
 
-void CSettings::setBoolean (char * group,char * key, bool val)
+void CSettings::setBoolean (const char * group, const char * key, bool val)
 {
 	GError *error = NULL;
 	g_key_file_set_boolean (m_KeyFile, group, key, val);
@@ -85,7 +85,7 @@ void CSettings::setBoolean (char * group,char * key, bool val)
 	}
 
 }
-void CSettings::setInt (char * group,char * key, int val)
+void CSettings::setInt (const char * group, const char * key, int32_t val)
 {
 	GError *error = NULL;
 	g_key_file_set_integer (m_KeyFile, group, key, val);
@@ -95,10 +95,10 @@ void CSettings::setInt (char * group,char * key, int val)
 		g_error (error->message);
 	}
 }
-void CSettings::setFloat (char * group,char * key, float val)
+void CSettings::setFloat (const char * group, const char * key, float32_t val)
 {
 	GError *error = NULL;
-	g_key_file_set_double(m_KeyFile, group, key, val);
+	g_key_file_set_double(m_KeyFile,group, key, val);
 
 	if (!g_key_file_save_to_file(m_KeyFile,"YapiBot.ini", &error))
 	{

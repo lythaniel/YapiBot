@@ -22,22 +22,22 @@ protected:
 
 public:
 	virtual void setBus (CI2Cbus * bus);
-	virtual float getHeading (void);
+	virtual float32_t getHeading (void);
 	virtual void stopCalibration ();
 	virtual void startCalibration ();
 
 
 private:
 
-	float m_MaxX;
-	float m_MaxY;
-	float m_MaxZ;
-	float m_MinX;
-	float m_MinY;
-	float m_MinZ;
-	short m_CalX;
-	short m_CalY;
-	short m_CalZ;
+	float32_t m_MaxX;
+	float32_t m_MaxY;
+	float32_t m_MaxZ;
+	float32_t m_MinX;
+	float32_t m_MinY;
+	float32_t m_MinZ;
+	int16_t m_CalX;
+	int16_t m_CalY;
+	int16_t m_CalZ;
 
 
 };

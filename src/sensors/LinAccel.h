@@ -17,9 +17,9 @@
 class CSensorFactory;
 
 typedef struct {
-	int x;
-	int y;
-	int z;
+	int32_t x;
+	int32_t y;
+	int32_t z;
 } sLinAccel;
 
 class CLinAccel {

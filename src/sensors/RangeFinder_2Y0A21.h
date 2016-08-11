@@ -23,7 +23,7 @@ protected:
 
 public:
 	virtual void setBus (CI2Cbus * bus);
-	virtual int getRange (void);
+	virtual int32_t getRange (void);
 
 private:
 

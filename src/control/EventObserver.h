@@ -10,6 +10,7 @@
 #ifndef EVENTOBSERVER_H_
 #define EVENTOBSERVER_H_
 
+#include "YapiBotTypes.h"
 #include "Singleton.h"
 #include "Event.h"
 #include "CallBack.h"
@@ -21,21 +22,21 @@ public:
 	CEventObserver();
 	~CEventObserver();
 
-	void notify (Event_t event, int data1 = 0,  void * data2 = NULL);
+	void notify (Event_t event, int32_t data1 = 0,  void * data2 = NULL);
 
 
 	template <class C>
-	void registerOnEvent (EventMask_t mask, C* instance, void (C::*method)(Event_t event, int data1,  void * data2)){
-		Callback3base<Event_t, int, void *> * cb = new Callback3<C,Event_t,int,void *> (instance, method);
+	void registerOnEvent (EventMask_t mask, C* instance, void (C::*method)(Event_t event, int32_t data1,  void * data2)){
+		Callback3base<Event_t, int32_t, void *> * cb = new Callback3<C,Event_t,int32_t,void *> (instance, method);
 		m_cbList.push_back(cbPair_t(mask,cb));
 	}
 	template <class C>
 		void unRegister (C* instance) {
-			Callback3<C,Event_t,int,void *> * cb;
+			Callback3<C,Event_t,int32_t,void *> * cb;
 			cbVector_t::iterator it;
 			for (it = m_cbList.begin();it != m_cbList.end(); it++)
 			{
-				cb = static_cast<Callback3 <C,Event_t,int,void *> *> (it->second);
+				cb = static_cast<Callback3 <C,Event_t,int32_t,void *> *> (it->second);
 				if (cb->getInstance() == instance)
 				{
 					m_cbList.erase(it);
@@ -47,7 +48,7 @@ public:
 
 
 private:
-	typedef std::pair <EventMask_t, Callback3base<Event_t, int, void *> *> cbPair_t;
+	typedef std::pair <EventMask_t, Callback3base<Event_t, int32_t, void *> *> cbPair_t;
 	typedef std::vector <cbPair_t> cbVector_t;
 
 	cbVector_t  m_cbList;

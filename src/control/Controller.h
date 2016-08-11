@@ -9,6 +9,8 @@
 #ifndef CONTROLLER_H_
 #define CONTROLLER_H_
 
+#include "YapiBotTypes.h"
+
 #include "Singleton.h"
 #include "Thread.h"
 #include "Mutex.h"
@@ -21,9 +23,9 @@ public:
 	CController();
 	~CController();
 
-	void CmdPckReceived (YapiBotCmd_t id, char * buffer, unsigned int size);
+	void CmdPckReceived (YapiBotCmd_t id, int8_t * buffer, uint32_t size);
 
-	//int toInt (char * buff);
+	//int32_t toInt (int8_t * buff);
 
 	void run (void *);
 
@@ -38,24 +40,24 @@ public:
 	} ctrlState_t;
 
 	void compassCalibration (void);
-	void moveStraight (int distance);
-	void alignBearing (int bearing);
-	void moveBearing (int bearing, int distance);
-	void rotate (int rot);
+	void moveStraight (int32_t distance);
+	void alignBearing (int32_t bearing);
+	void moveBearing (int32_t bearing, int32_t distance);
+	void rotate (int32_t rot);
 	void refreshMap (void);
 
-	void EventCallback (Event_t evt, int data1, void * data2);
+	void EventCallback (Event_t evt, int32_t data1, void * data2);
 
-	void setParameter (YapiBotParam_t, char * buffer, unsigned int size);
+	void setParameter (YapiBotParam_t, int8_t * buffer, uint32_t size);
 	void getParameter (YapiBotParam_t param);
 
 
 private:
 
-	void processCmdMove (YapiBotCmd_t cmd, char * buffer, unsigned int size);
-	void processCmd (YapiBotCmd_t cmd, char * buffer, unsigned int size);
+	void processCmdMove (YapiBotCmd_t cmd, int8_t * buffer, uint32_t size);
+	void processCmd (YapiBotCmd_t cmd, int8_t * buffer, uint32_t size);
 
-	void processCmdParam (YapiBotCmd_t cmd, char * buffer, unsigned int size);
+	void processCmdParam (YapiBotCmd_t cmd, int8_t * buffer, uint32_t size);
 
 
 
@@ -70,19 +72,19 @@ private:
 
 	ctrlState_t m_State;
 
-	int m_DistMovedLeft;
-	int m_DistMovedRight;
-	int m_BearingGoodCnt;
+	int32_t m_DistMovedLeft;
+	int32_t m_DistMovedRight;
+	int32_t m_BearingGoodCnt;
 
-	int m_RequestedBearing;
-	int m_ReqLeftMov;
-	int m_ReqRightMov;
+	int32_t m_RequestedBearing;
+	int32_t m_ReqLeftMov;
+	int32_t m_ReqRightMov;
 
-	unsigned int m_CollisionDist;
-	unsigned int m_MvtErrGain;
-	unsigned int m_BearingErrGain;
-	unsigned int m_BearingErrLim;
-	unsigned int m_BearingGoodCntLim;
+	uint32_t m_CollisionDist;
+	uint32_t m_MvtErrGain;
+	uint32_t m_BearingErrGain;
+	uint32_t m_BearingErrLim;
+	uint32_t m_BearingGoodCntLim;
 
 	YapiBotStatus_t m_Status;
 

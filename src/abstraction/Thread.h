@@ -52,7 +52,7 @@ public:
 	virtual void start(void);
 
 
-	CAlarmThread (int * timer, trigger_t trig);
+	CAlarmThread (int32_t * timer, trigger_t trig);
 
 
 private:

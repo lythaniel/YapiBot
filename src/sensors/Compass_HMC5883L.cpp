@@ -28,7 +28,7 @@
 #define max(X,Y) (X>Y)?X:Y
 #define min(X,Y) (X<Y)?X:Y
 
-float CCompass_HMC5883L::ScaleTable [8] = {0.73, 0.92, 1.22, 1.52, 2.27, 2.56, 3.03, 4.35};
+float32_t CCompass_HMC5883L::ScaleTable [8] = {0.73, 0.92, 1.22, 1.52, 2.27, 2.56, 3.03, 4.35};
 
 CCompass_HMC5883L::CCompass_HMC5883L() :
 m_Scale (4),
@@ -59,21 +59,21 @@ CCompass_HMC5883L::~CCompass_HMC5883L() {
 
 }
 
-void CCompass_HMC5883L::writeReg (char regadd, char value)
+void CCompass_HMC5883L::writeReg (int8_t regadd, int8_t value)
 {
-	unsigned char buff[2];
+	uint8_t buff[2];
 	buff[0] = regadd,
 	buff[1] = value;
 	m_I2Cbus->write(HMC5883L_I2C_ADD,buff, 2);
 }
 
-float CCompass_HMC5883L::getHeading (void)
+float32_t CCompass_HMC5883L::getHeading (void)
 {
-	float heading = 0;
-	unsigned char address = DATA_REG;
-	unsigned char buffer [6];
-	short sx, sy, sz;
-	float fx,fy,fz;
+	float32_t heading = 0;
+	uint8_t address = DATA_REG;
+	uint8_t buffer [6];
+	int16_t sx, sy, sz;
+	float32_t fx,fy,fz;
 	if (m_I2Cbus == NULL)
 	{
 		return 0;

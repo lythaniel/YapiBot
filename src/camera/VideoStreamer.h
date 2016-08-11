@@ -10,7 +10,7 @@
 #ifndef VIDEOSTREAMER_H_
 #define VIDEOSTREAMER_H_
 
-#include <stdint.h>
+#include "YapiBotTypes.h"
 #include "Network.h"
 #include "EventObserver.h"
 
@@ -24,7 +24,7 @@ public:
 	void streamFrame (uint8_t * frame, uint32_t size);
 
 	void cb (uint8_t * buff, uint32_t size );
-	void Networkcb (Event_t evt, int data1, void * data2);
+	void Networkcb (Event_t evt, int32_t data1, void * data2);
 
 private:
 	CEncoder * m_pEncoder;

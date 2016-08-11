@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 
-CState::CState(StateId_t id, const char * StateName) :
+CState::CState(StateId_t id, const int8_t * StateName) :
 m_Id (id),
 m_Name(StateName)
 {
@@ -30,7 +30,7 @@ CState::~CState()
 }
 
 
-CTransition * CState::onEvent (Event_t evt, int data1, void * data2)
+CTransition * CState::onEvent (Event_t evt, int32_t data1, void * data2)
 {
 	TransVect_t::iterator it;
 	for (it = m_TransList.begin(); it != m_TransList.end(); it++)
@@ -179,7 +179,7 @@ StateId_t CStateMachine::getCurrentState (void)
 	return m_CurrentState;
 }
 
-void CStateMachine::rcvEvent (Event_t evt, int data1, void * data2)
+void CStateMachine::rcvEvent (Event_t evt, int32_t data1, void * data2)
 {
 	m_EventQueueLock.get();
 	if (m_Running)

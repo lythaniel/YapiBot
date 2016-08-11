@@ -11,6 +11,7 @@
 #ifndef NETWORK_H_
 #define NETWORK_H_
 
+#include "YapiBotTypes.h"
 #include "CallBack.h"
 #include "Singleton.h"
 #include "YapiBotCmd.h"
@@ -35,9 +36,9 @@ public:
 	void start(void);
 	void stop (void);
 
-	void sendCmdPck (YapiBotCmd_t id, unsigned char * payload, unsigned int size);
+	void sendCmdPck (YapiBotCmd_t id, uint8_t * payload, uint32_t size);
 	
-	void sendVideoPacket (unsigned char * buffer, unsigned int size);
+	void sendVideoPacket (uint8_t * buffer, uint32_t size);
 
 	void VideoServerThread (void *);
 	void CmdServerThread (void *);
@@ -47,7 +48,7 @@ public:
 	bool isVideoConnected (void) {return m_VideoClientConnected;}
 
 private:
-	Callback3base<YapiBotCmd_t, char *, unsigned int> *  m_pRxCb;
+	Callback3base<YapiBotCmd_t, int8_t *, uint32_t> *  m_pRxCb;
 	CThread * m_pVideoServerThread;
 	CMutex * m_pVideoSockMutex;
 	
@@ -70,13 +71,13 @@ private:
 
 	CThread * m_pRxCmdThread;
 
-	char * m_pCmdRxBuffer;
-	char * m_pCmdTxBuffer;
+	int8_t * m_pCmdRxBuffer;
+	int8_t * m_pCmdTxBuffer;
 	YapiBotHeader_t * m_pCmdTxHeader;
-	char * m_pCmdTxPayload;
+	int8_t * m_pCmdTxPayload;
 
-	short m_VideoPort;
-	short m_CmdPort;
+	int16_t m_VideoPort;
+	int16_t m_CmdPort;
 
 
 };

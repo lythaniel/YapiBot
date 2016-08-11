@@ -14,24 +14,24 @@
 class Utils
 {
 public:
-	static int toInt (void * buff) {
-		int ret;
+	static int32_t toInt (void * buff) {
+		int32_t ret;
 		memcpy (&ret, buff, 4);
 		return (ret);
 	}
 
-	static void fromInt (int val,void * buff) {
+	static void fromInt (int32_t val,void * buff) {
 		memcpy(buff,&val,4);
 
 	}
 
-	static float toFloat (void * buff) {
-		float ret;
+	static float32_t toFloat (void * buff) {
+		float32_t ret;
 		memcpy (&ret,buff,4);
 		return (ret);
 	}
 
-	static void fromFloat (float val, void * buff) {
+	static void fromFloat (float32_t val, void * buff) {
 		memcpy(buff,&val,4);
 	}
 

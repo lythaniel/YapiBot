@@ -40,12 +40,12 @@
 
 #define SPEED_MOV_AVG 5
 
-static void GpioCbL (int pi, unsigned int gpio, unsigned int level, unsigned int tick, void * user)
+static void GpioCbL (int32_t pi, uint32_t gpio, uint32_t level, uint32_t tick, void * user)
 {
 	CMotors * motor = (CMotors *) user;
 	motor->EncoderCbLeft (gpio, level, tick);
 }
-static void GpioCbR (int pi, unsigned int gpio, unsigned int level, unsigned int tick, void * user)
+static void GpioCbR (int32_t pi, uint32_t gpio, uint32_t level, uint32_t tick, void * user)
 {
 	CMotors * motor = (CMotors *) user;
 	motor->EncoderCbRight (gpio, level, tick);
@@ -72,7 +72,7 @@ m_SpeedConv(SPEED_CONV),
 m_SpeedErrGain(SPEED_ERROR_GAIN),
 m_AccErrGain(ACC_ERROR_GAIN)
 {
-	int ret = 0;
+	int32_t ret = 0;
 	m_SpeedConv = CSettings::getInstance()->getFloat("MOTORS", "Speed conversion", SPEED_CONV);
 	m_SpeedErrGain = CSettings::getInstance()->getFloat("MOTORS", "Speed error gain", SPEED_ERROR_GAIN);
 	m_AccErrGain = CSettings::getInstance()->getFloat("MOTORS", "Acceleration error gain", ACC_ERROR_GAIN);
@@ -194,7 +194,7 @@ CMotors::~CMotors ()
 #endif
 }
 
-void CMotors::move (int x, int y)
+void CMotors::move (int32_t x, int32_t y)
 {
 
 	if (x > 100)
@@ -207,14 +207,14 @@ void CMotors::move (int x, int y)
 	else if (y < -100)
 		y = -100;
 
-	int speed_left = x-y;
-	int speed_right = x+y;
+	int32_t speed_left = x-y;
+	int32_t speed_right = x+y;
 
 
 	setLeftSpeed(speed_left);
 	setRightSpeed(speed_right);
 }
-void CMotors::setLeftSpeed (int speed)
+void CMotors::setLeftSpeed (int32_t speed)
 {
 	if (speed > 100)
 		speed = 100;
@@ -226,7 +226,7 @@ void CMotors::setLeftSpeed (int speed)
 }
 
 
-void CMotors::setRightSpeed (int speed)
+void CMotors::setRightSpeed (int32_t speed)
 {
 	if (speed > 100)
 		speed = 100;
@@ -237,7 +237,7 @@ void CMotors::setRightSpeed (int speed)
 	m_Lock.release();
 }
 
-void CMotors::ctrlLeftSpeed (int speed)
+void CMotors::ctrlLeftSpeed (int32_t speed)
 {
 #ifdef MOTORS_CONTROL
 	if (abs(speed) <= 10)
@@ -273,7 +273,7 @@ void CMotors::ctrlLeftSpeed (int speed)
 }
 
 
-void CMotors::ctrlRightSpeed (int speed)
+void CMotors::ctrlRightSpeed (int32_t speed)
 {
 #ifdef MOTORS_CONTROL
 	if (abs(speed) <= 10)
@@ -306,13 +306,13 @@ void CMotors::ctrlRightSpeed (int speed)
 #endif
 	}
 
-void CMotors::moveCam (int pos)
+void CMotors::moveCam (int32_t pos)
 {
 	if (pos < 0)
 		pos = 0;
 	if (pos > 100)
 		pos = 100;
-	int servpos = (pos * 130) / 10;
+	int32_t servpos = (pos * 130) / 10;
 	servpos += 800;
 #ifdef MOTORS_CONTROL
 	set_servo_pulsewidth (m_Pi, PWM_GPIO_CAM, servpos);
@@ -322,9 +322,9 @@ void CMotors::moveCam (int pos)
 	m_Lock.release();
 }
 
-int CMotors::getLeftSpeed (void)
+int32_t CMotors::getLeftSpeed (void)
 {
-	int ret;
+	int32_t ret;
 
 	m_Lock.get();
 	ret = m_LeftSpeed;
@@ -332,9 +332,9 @@ int CMotors::getLeftSpeed (void)
 
 	return ret;
 }
-int CMotors::getRightSpeed (void)
+int32_t CMotors::getRightSpeed (void)
 {
-	int ret;
+	int32_t ret;
 
 	m_Lock.get();
 	ret = m_RightSpeed;
@@ -343,9 +343,9 @@ int CMotors::getRightSpeed (void)
 	return ret;
 }
 
-int CMotors::getLeftMeas (void)
+int32_t CMotors::getLeftMeas (void)
 {
-	int ret;
+	int32_t ret;
 
 	m_Lock.get();
 	ret = m_MeasLeftSpeed;
@@ -353,9 +353,9 @@ int CMotors::getLeftMeas (void)
 
 	return ret;
 }
-int CMotors::getRightMeas (void)
+int32_t CMotors::getRightMeas (void)
 {
-	int ret;
+	int32_t ret;
 
 	m_Lock.get();
 	ret = m_MeasRightSpeed;
@@ -364,9 +364,9 @@ int CMotors::getRightMeas (void)
 	return ret;
 }
 
-int CMotors::getLeftDist (void)
+int32_t CMotors::getLeftDist (void)
 {
-	int ret;
+	int32_t ret;
 
 	m_Lock.get();
 	ret = m_DistLeft;
@@ -376,9 +376,9 @@ int CMotors::getLeftDist (void)
 	return ret;
 }
 
-int CMotors::getRightDist (void)
+int32_t CMotors::getRightDist (void)
 {
-	int ret;
+	int32_t ret;
 
 	m_Lock.get();
 	ret = m_DistRight;
@@ -397,7 +397,7 @@ void CMotors::resetDist (void)
 }
 
 
-void CMotors::EncoderCbLeft (int gpio, int level, unsigned int tick)
+void CMotors::EncoderCbLeft (int32_t gpio, int32_t level, uint32_t tick)
 {
 
 	if (m_LastGpioLeft != gpio)
@@ -433,7 +433,7 @@ void CMotors::EncoderCbLeft (int gpio, int level, unsigned int tick)
 
 }
 
-void CMotors::EncoderCbRight(int gpio, int level, unsigned int tick)
+void CMotors::EncoderCbRight(int32_t gpio, int32_t level, uint32_t tick)
 {
 
 	if (m_LastGpioRight != gpio)
@@ -472,26 +472,26 @@ void CMotors::EncoderCbRight(int gpio, int level, unsigned int tick)
 void CMotors::run (void *)
 {
 	CSampler sampler (MOTOR_PERIOD);
-	float fSpeedErrL = 0;
-	float fSpeedErrR = 0;
+	float32_t fSpeedErrL = 0;
+	float32_t fSpeedErrR = 0;
 
-	float fPrevComdL = 0;
-	float fPrevComdR = 0;
+	float32_t fPrevComdL = 0;
+	float32_t fPrevComdR = 0;
 
-	int iPrevSpeedL = 0;
-	int iPrevSpeedR = 0;
+	int32_t iPrevSpeedL = 0;
+	int32_t iPrevSpeedR = 0;
 
-	float fAccConsL = 0;
-	float fAccConsR = 0;
+	float32_t fAccConsL = 0;
+	float32_t fAccConsR = 0;
 
-	float fAccL = 0;
-	float fAccR = 0;
+	float32_t fAccL = 0;
+	float32_t fAccR = 0;
 
-	float fAccErrL = 0;
-	float fAccErrR = 0;
-	int MeasSpeedL [SPEED_MOV_AVG] = {0};
-	int MeasSpeedR [SPEED_MOV_AVG] = {0};
-	int MeasSpeedidx = 0;
+	float32_t fAccErrL = 0;
+	float32_t fAccErrR = 0;
+	int32_t MeasSpeedL [SPEED_MOV_AVG] = {0};
+	int32_t MeasSpeedR [SPEED_MOV_AVG] = {0};
+	int32_t MeasSpeedidx = 0;
 
 	while (1)
 	{
@@ -518,8 +518,8 @@ void CMotors::run (void *)
 		iPrevSpeedL = m_MeasLeftSpeed;
 		iPrevSpeedR = m_MeasRightSpeed;
 
-		fSpeedErrL = ((float)m_LeftSpeed*m_SpeedConv - (float)m_MeasLeftSpeed) * m_SpeedErrGain;
-		fSpeedErrR = ((float)m_RightSpeed*m_SpeedConv- (float)m_MeasRightSpeed) * m_SpeedErrGain;
+		fSpeedErrL = ((float32_t)m_LeftSpeed*m_SpeedConv - (float32_t)m_MeasLeftSpeed) * m_SpeedErrGain;
+		fSpeedErrR = ((float32_t)m_RightSpeed*m_SpeedConv- (float32_t)m_MeasRightSpeed) * m_SpeedErrGain;
 
 		fAccConsL = fSpeedErrL;
 		fAccConsR = fSpeedErrR;
@@ -530,8 +530,8 @@ void CMotors::run (void *)
 		fPrevComdL = fAccErrL;
 		fPrevComdR = fAccErrR;
 
-		ctrlLeftSpeed((int)fPrevComdL);
-		ctrlRightSpeed((int)fPrevComdR);
+		ctrlLeftSpeed((int32_t)fPrevComdL);
+		ctrlRightSpeed((int32_t)fPrevComdR);
 
 		m_LeftCounter = 0;
 		m_RightCounter = 0;
@@ -542,9 +542,9 @@ void CMotors::run (void *)
 	}
 }
 
-void CMotors::setParameter (YapiBotParam_t param, char * buffer, unsigned int size)
+void CMotors::setParameter (YapiBotParam_t param, int8_t * buffer, uint32_t size)
 {
-	unsigned int val;
+	uint32_t val;
 	if (size < 4)
 	{
 		fprintf (stderr, "Cannot set controller parameter (not enough arguments)");
@@ -576,7 +576,7 @@ void CMotors::getParameter (YapiBotParam_t param)
 {
 	YapiBotParamAnswer_t answer;
 
-	Utils::fromInt((int)param, &answer.param);
+	Utils::fromInt((int32_t)param, &answer.param);
 
 	switch (param)
 	{
@@ -594,7 +594,7 @@ void CMotors::getParameter (YapiBotParam_t param)
 			fprintf (stderr, "Unknown motor parameter !");
 			return;
 	}
-	CNetwork::getInstance()->sendCmdPck (CmdInfoParam, (unsigned char *)&answer, sizeof(YapiBotParamAnswer_t));
+	CNetwork::getInstance()->sendCmdPck (CmdInfoParam, (uint8_t *)&answer, sizeof(YapiBotParamAnswer_t));
 }
 
 

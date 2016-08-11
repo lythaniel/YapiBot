@@ -10,6 +10,7 @@
 #ifndef YAPIBOTCMD_H_
 #define YAPIBOTCMD_H_
 
+#include "YapiBotTypes.h"
 
 #define YAPIBOT_MAGIC_NUMBER 0x1A2B3C4D
 #define YAPIBOT_MAX_PL_SIZE 1024
@@ -84,26 +85,26 @@ typedef enum {
 
 
 typedef struct {
-	int heading;
-	int speed_left;
-	int speed_right;
-	int camera_pos;
-	int range;
-	int meas_left;
-	int meas_right;
-	int accel_x;
-	int accel_y;
+	int32_t heading;
+	int32_t speed_left;
+	int32_t speed_right;
+	int32_t camera_pos;
+	int32_t range;
+	int32_t meas_left;
+	int32_t meas_right;
+	int32_t accel_x;
+	int32_t accel_y;
 } YapiBotStatus_t;
 
 typedef struct {
 	YapiBotParam_t param;
-	int val;
+	int32_t val;
 } YapiBotParamAnswer_t;
 
 typedef struct {
-	int magicNumber;
+	int32_t magicNumber;
 	YapiBotCmd_t id;
-	int payloadSize;
+	int32_t payloadSize;
 } YapiBotHeader_t;
 
 

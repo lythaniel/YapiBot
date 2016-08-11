@@ -54,8 +54,8 @@ m_pRxCmdThread(NULL)
 	m_pCmdSockMutex = new CMutex();
 	m_pCmdClientDisconnected = new CSemaphore(1);
 
-	m_pCmdTxBuffer = new char [sizeof(YapiBotHeader_t) + YAPIBOT_MAX_PL_SIZE];
-	m_pCmdRxBuffer = new char [sizeof(YapiBotHeader_t) + YAPIBOT_MAX_PL_SIZE];
+	m_pCmdTxBuffer = new int8_t [sizeof(YapiBotHeader_t) + YAPIBOT_MAX_PL_SIZE];
+	m_pCmdRxBuffer = new int8_t [sizeof(YapiBotHeader_t) + YAPIBOT_MAX_PL_SIZE];
 
 	m_pCmdTxHeader = (YapiBotHeader_t *)&m_pCmdTxBuffer[0];
 	m_pCmdTxPayload = m_pCmdTxBuffer + sizeof(YapiBotHeader_t);
@@ -86,7 +86,7 @@ void CNetwork::stop (void)
 	
 }
 
-void CNetwork::sendCmdPck (YapiBotCmd_t id, unsigned char * buffer, unsigned int size)
+void CNetwork::sendCmdPck (YapiBotCmd_t id, uint8_t * buffer, uint32_t size)
 {
 	if (m_pCmdSockMutex->get(MUTEX_TIMEOUT_DONTWAIT))
 		{
@@ -101,7 +101,7 @@ void CNetwork::sendCmdPck (YapiBotCmd_t id, unsigned char * buffer, unsigned int
 				m_pCmdTxHeader->payloadSize = size;
 				memcpy (m_pCmdTxPayload, buffer, size);
 
-				int ret = send(m_CmdClientSock, m_pCmdTxBuffer,sizeof(YapiBotHeader_t) + m_pCmdTxHeader->payloadSize, 0);
+				int32_t ret = send(m_CmdClientSock, m_pCmdTxBuffer,sizeof(YapiBotHeader_t) + m_pCmdTxHeader->payloadSize, 0);
 				if (ret == -1)
 				{
 					m_CmdClientSock = -1;
@@ -115,13 +115,13 @@ void CNetwork::sendCmdPck (YapiBotCmd_t id, unsigned char * buffer, unsigned int
 		}
 }
 
-void CNetwork::sendVideoPacket (unsigned char * buffer, unsigned int size)
+void CNetwork::sendVideoPacket (uint8_t * buffer, uint32_t size)
 {
 	if (m_pVideoSockMutex->get(MUTEX_TIMEOUT_DONTWAIT))
 	{
 		if (m_VideoClientConnected)
 		{
-			int ret = send(m_VideoClientSock, buffer, size, 0);
+			int32_t ret = send(m_VideoClientSock, buffer, size, 0);
 			if (ret == -1)
 			{
 				m_VideoClientSock = -1;
@@ -160,7 +160,7 @@ void CNetwork::VideoServerThread (void *)
 
     /* Run until cancelled */
 	while (1) {
-		unsigned int clientlen = sizeof(clientaddr);
+		uint32_t clientlen = sizeof(clientaddr);
 		/* Wait for client connection */
 		m_pVideoSockMutex->get();
 		if ((m_VideoClientSock = accept(m_VideoServerSock, (struct sockaddr *) &clientaddr, &clientlen)) < 0) {
@@ -207,7 +207,7 @@ void CNetwork::CmdServerThread (void *)
 
     /* Run until cancelled */
 	while (1) {
-		unsigned int clientlen = sizeof(clientaddr);
+		uint32_t clientlen = sizeof(clientaddr);
 		/* Wait for client connection */
 		m_pCmdSockMutex->get();
 		if ((m_CmdClientSock = accept(m_CmdServerSock, (struct sockaddr *) &clientaddr, &clientlen)) < 0) {
@@ -239,10 +239,10 @@ void CNetwork::CmdServerThread (void *)
 void CNetwork::RxCmdThread (void *)
 {
 	YapiBotHeader_t * header;
-	char payload[YAPIBOT_MAX_PL_SIZE];
-	unsigned int size_to_copy = 0;
-	unsigned int payloadIdx = 0;
-	unsigned int len;
+	int8_t payload[YAPIBOT_MAX_PL_SIZE];
+	uint32_t size_to_copy = 0;
+	uint32_t payloadIdx = 0;
+	uint32_t len;
 	YapiBotCmd_t id;
 
 	while (1)
@@ -251,7 +251,7 @@ void CNetwork::RxCmdThread (void *)
 		{
 			if (m_CmdClientConnected)
 			{
-				int ret = recv(m_CmdClientSock, m_pCmdRxBuffer, (sizeof(YapiBotHeader_t) + YAPIBOT_MAX_PL_SIZE), 0);
+				int32_t ret = recv(m_CmdClientSock, m_pCmdRxBuffer, (sizeof(YapiBotHeader_t) + YAPIBOT_MAX_PL_SIZE), 0);
 				if (ret == -1)
 				{
 					m_CmdClientSock = -1;
@@ -262,12 +262,12 @@ void CNetwork::RxCmdThread (void *)
 				}
 				else {
 					len = ret;
-					unsigned int idx = 0;
+					uint32_t idx = 0;
 					while (len > 0)
 					{
 						if (size_to_copy > 0) //We still have payload to copy.
 						{
-							unsigned int copysz = (size_to_copy<len)?size_to_copy:len;
+							uint32_t copysz = (size_to_copy<len)?size_to_copy:len;
 							if ((copysz + payloadIdx) > YAPIBOT_MAX_PL_SIZE)
 							{
 								//Something is very wrong here.

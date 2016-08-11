@@ -20,7 +20,7 @@
 #include <unistd.h>
 //#include <pigpiod_if2.h>
 
-CI2Cbus::CI2Cbus(int bus) {
+CI2Cbus::CI2Cbus(int32_t bus) {
 	char filename [] = "/dev/i2c-x";
 	filename[9] = 0x30 + bus;
 	m_Handle = open (filename, O_RDWR);
@@ -43,9 +43,9 @@ CI2Cbus::~CI2Cbus() {
 	close (m_Handle);
 }
 
-int CI2Cbus::write (char add, unsigned char * buff, unsigned int size)
+int32_t CI2Cbus::write (int8_t add, uint8_t * buff, uint32_t size)
 {
-	int ret = 0;
+	int32_t ret = 0;
 	if (ioctl(m_Handle, I2C_SLAVE, add) < 0)
 	{
 		printf ("Could not set I2C slave address !\n");
@@ -58,9 +58,9 @@ int CI2Cbus::write (char add, unsigned char * buff, unsigned int size)
 	return ret;
 }
 
-int CI2Cbus::read (char add, unsigned char * buff, unsigned int size)
+int32_t CI2Cbus::read (int8_t add, uint8_t * buff, uint32_t size)
 {
-	int ret = 0;
+	int32_t ret = 0;
 	if (ioctl(m_Handle, I2C_SLAVE, add) < 0)
 	{
 		printf ("Could not set I2C slave address !\n");
@@ -73,9 +73,9 @@ int CI2Cbus::read (char add, unsigned char * buff, unsigned int size)
 	return ret;
 }
 
-int CI2Cbus::write (char add, unsigned char subAdd, unsigned char * buff, unsigned int size)
+int32_t CI2Cbus::write (int8_t add, uint8_t subAdd, uint8_t * buff, uint32_t size)
 {
-	int ret = 0;
+	int32_t ret = 0;
 	i2c_msg msgs [2];
 	i2c_rdwr_ioctl_data ioctl_data;
 	ioctl_data.msgs = &msgs[0];
@@ -96,9 +96,9 @@ int CI2Cbus::write (char add, unsigned char subAdd, unsigned char * buff, unsign
 	return ret;
 }
 
-int CI2Cbus::read (char add, unsigned char subAdd, unsigned char * buff, unsigned int size)
+int32_t CI2Cbus::read (int8_t add, uint8_t subAdd, uint8_t * buff, uint32_t size)
 {
-	int ret = 0;
+	int32_t ret = 0;
 	i2c_msg msgs [2];
 	i2c_rdwr_ioctl_data ioctl_data;
 	ioctl_data.msgs = &msgs[0];

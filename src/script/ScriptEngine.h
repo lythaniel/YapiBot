@@ -24,7 +24,7 @@ public:
 
 	void Init(void);
 
-	void RunScript (char * scriptname);
+	void RunScript (const char * scriptname);
 
 	void run (void *);
 
@@ -34,7 +34,7 @@ private:
 	CSemaphore m_Sem;
 	CMutex m_Lock;
 
-	char * m_ScriptName;
+	const char * m_ScriptName;
 
 };
 

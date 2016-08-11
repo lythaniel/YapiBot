@@ -17,7 +17,7 @@
 #include "mmalincludes.h"
 #define ENCODER_BITRATE (1024*1024) //1Mbps
 
-CEncoder::CEncoder (int width, int height, int framerate) :
+CEncoder::CEncoder (int32_t width, int32_t height, int32_t framerate) :
 m_Width (width),
 m_Height (height),
 m_FrameRate (framerate)
@@ -128,9 +128,9 @@ MMAL_STATUS_T CEncoder::ConnectConvToEnc (void)
 	status = mmal_port_enable(m_pConvInPort, converter_input_callback);
 	status = mmal_port_enable(m_pEncOutPort, encoder_output_callback);
 
-	int num = mmal_queue_length(m_pEncPoolOut->queue);
+	int32_t num = mmal_queue_length(m_pEncPoolOut->queue);
 
-	for (int q=0;q<num;q++)
+	for (int32_t q=0;q<num;q++)
 	{
 		MMAL_BUFFER_HEADER_T *buffer = mmal_queue_get(m_pEncPoolOut->queue);
 
@@ -470,7 +470,7 @@ void CEncoder::onEncoderOutputCallback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *
 {
 	MMAL_BUFFER_HEADER_T *new_buffer;
 	MMAL_STATUS_T status;
-	int bytes_written;
+	int32_t bytes_written;
 
 	if (buffer->length)
 	{

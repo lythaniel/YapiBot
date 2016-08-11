@@ -20,13 +20,13 @@ public:
 	CPythonApi ();
 	~CPythonApi ();
 
-	int compassCalibration (void);
-	int moveStraight (int distance);
-	int alignBearing (int bearing);
-	int moveBearing (int bearing, int distance);
-	int rotate (int rot);
+	int32_t compassCalibration (void);
+	int32_t moveStraight (int32_t distance);
+	int32_t alignBearing (int32_t bearing);
+	int32_t moveBearing (int32_t bearing, int32_t distance);
+	int32_t rotate (int32_t rot);
 
-	void EventCallback (Event_t evt, int data1, void * data2);
+	void EventCallback (Event_t evt, int32_t data1, void * data2);
 
 
 private:

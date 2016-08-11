@@ -38,7 +38,7 @@ void CVideoStreamer::cb (uint8_t * buff, uint32_t size )
 
 
 
-void CVideoStreamer::Networkcb (Event_t evt, int data1, void * data2)
+void CVideoStreamer::Networkcb (Event_t evt, int32_t data1, void * data2)
 {
 	if ((evt == NetVideoClientConnected))
 	{

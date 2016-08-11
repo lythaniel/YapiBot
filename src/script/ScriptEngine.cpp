@@ -67,7 +67,7 @@ void CScriptEngine::Init(void)
 
 }
 
-void CScriptEngine::RunScript (char * scriptname)
+void CScriptEngine::RunScript (const char * scriptname)
 {
 	m_Lock.get();
 	m_ScriptName = scriptname;

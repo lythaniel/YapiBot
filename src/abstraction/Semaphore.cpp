@@ -13,7 +13,7 @@
 
 
 
-CSemaphore::CSemaphore (int maxcount) :
+CSemaphore::CSemaphore (int32_t maxcount) :
 m_MaxCnt(maxcount)
 {
 	sem_init (&m_Sem, 0, 0);
@@ -24,9 +24,9 @@ CSemaphore::~CSemaphore ()
 	sem_destroy(&m_Sem);
 }
 
-bool CSemaphore::wait(int timeout)
+bool CSemaphore::wait(int32_t timeout)
 {
-	int ret;
+	int32_t ret;
 	if(timeout == SEM_TIMEOUT_DONTWAIT)
 	{
 		ret = sem_trywait(&m_Sem);
@@ -50,7 +50,7 @@ void CSemaphore::post(void)
 {
 	if (m_MaxCnt > 0)
 	{
-		int val;
+		int32_t val;
 		sem_getvalue(&m_Sem, &val);
 		if (val < m_MaxCnt)
 		{

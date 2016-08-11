@@ -82,8 +82,8 @@ CCompass_LSM9DS1::~CCompass_LSM9DS1() {
 
 void CCompass_LSM9DS1::setBus (CI2Cbus * bus)
 {
-	unsigned char buff[7];
-	unsigned char whoAmI = 0;
+	uint8_t buff[7];
+	uint8_t whoAmI = 0;
 
 	m_I2Cbus = bus;
 
@@ -122,7 +122,7 @@ void CCompass_LSM9DS1::setBus (CI2Cbus * bus)
 }
 void CCompass_LSM9DS1::startCalibration ()
 {
-	unsigned char buff[7];
+	uint8_t buff[7];
 
 	//Clear offset registers during calibration.
 	memset (buff, 0x00, 7); //Clear buffer.
@@ -150,9 +150,9 @@ void CCompass_LSM9DS1::startCalibration ()
 void CCompass_LSM9DS1::stopCalibration ()
 {
 	m_Calib = false;
-	unsigned char buff[7];
+	uint8_t buff[7];
 
-	float avgX, avgY, avgZ;
+	float32_t avgX, avgY, avgZ;
 
 	//Calculate new median value for each axis.
 	avgX = ((m_MaxX + m_MinX)/2);
@@ -181,14 +181,14 @@ void CCompass_LSM9DS1::stopCalibration ()
 	m_I2Cbus->write(LSM9DS1_MAG_I2C_ADD,buff, 7);
 }
 
-float CCompass_LSM9DS1::getHeading (void)
+float32_t CCompass_LSM9DS1::getHeading (void)
 {
-	float heading = 0;
-	unsigned char buffer [6];
-	short sx, sy, sz;
-	float fx,fy,fz;
+	float32_t heading = 0;
+	uint8_t buffer [6];
+	int16_t sx, sy, sz;
+	float32_t fx,fy,fz;
 
-	//float norm;
+	//float32_t norm;
 	if (m_I2Cbus == NULL)
 	{
 		return 0;

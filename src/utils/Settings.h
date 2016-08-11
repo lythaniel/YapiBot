@@ -10,6 +10,7 @@
 #ifndef SETTINGS_H_
 #define SETTINGS_H_
 
+#include "YapiBotTypes.h"
 #include <Singleton.h>
 #include <glib.h>
 
@@ -21,13 +22,13 @@ protected:
 	~CSettings();
 
 public:
-	bool getBoolean (char * group,char * key, bool defaultValue);
-	int getInt (char * group,char * key, int defaultValue);
-	float getFloat (char * group,char * key, float defaultValue);
+	bool getBoolean (const char * group, const char * key, bool defaultValue);
+	int32_t getInt (const char * group, const char * key, int32_t defaultValue);
+	float32_t getFloat (const char * group, const char * key, float32_t defaultValue);
 
-	void setBoolean (char * group,char * key, bool val);
-	void setInt (char * group,char * key, int val);
-	void setFloat (char * group,char * key, float val);
+	void setBoolean (const char * group, const char * key, bool val);
+	void setInt (const char * group, const char * key, int32_t val);
+	void setFloat (const char * group, const char * key, float32_t val);
 
 private:
 	GKeyFile * m_KeyFile;

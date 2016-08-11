@@ -16,7 +16,7 @@
 class CEncoder
 {
 public:
-	CEncoder (int width, int height, int framerate);
+	CEncoder (int32_t width, int32_t height, int32_t framerate);
 	~CEncoder ();
 
 	static void converter_input_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
@@ -31,9 +31,9 @@ public:
 	DECLARE_REG_FUNCTION_CB_2(regFrameEncodedCb, m_pFrameEncodedCb)
 
 private:
-	int						m_Width;
-	int						m_Height;
-	int						m_FrameRate;
+	int32_t						m_Width;
+	int32_t						m_Height;
+	int32_t						m_FrameRate;
 
 	MMAL_COMPONENT_T * m_pEncComp;  // Pointer to the encoder component
 	MMAL_COMPONENT_T * m_pConvComp; // Pointer to the converter component

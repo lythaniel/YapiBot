@@ -11,7 +11,7 @@
 #define IMAGEPROCESSING_H_
 
 #include "Singleton.h"
-#include <stdint.h>
+#include "YapiBotTypes.h"
 #include "YapiBotCmd.h"
 
 class CCamera;
@@ -27,7 +27,7 @@ public:
 	void VideoProcThread (void *);
 	void init(uint32_t width, uint32_t height,uint32_t framerate);
 
-	void setParameter (YapiBotParam_t param, char * buffer, unsigned int size);
+	void setParameter (YapiBotParam_t param, int8_t * buffer, uint32_t size);
 	void getParameter (YapiBotParam_t param);
 
 

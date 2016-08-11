@@ -86,6 +86,8 @@ int main(int argc, const char **argv)
 	CSemaphore deadlock;
 	deadlock.wait (); //Semaphore are created with value 0, so it will wait forever.
 
+	return 0;
+
 }
 
 

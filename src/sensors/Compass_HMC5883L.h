@@ -24,23 +24,23 @@ protected:
 
 public:
 	virtual void setBus (CI2Cbus * bus);
-	virtual float getHeading (void);
+	virtual float32_t getHeading (void);
 
 private:
-	void writeReg (char regadd, char value);
+	void writeReg (int8_t regadd, int8_t value);
 
-	int m_Scale;
+	int32_t m_Scale;
 
-	static float ScaleTable [];
-	float m_MaxX;
-	float m_MaxY;
-	float m_MaxZ;
-	float m_MinX;
-	float m_MinY;
-	float m_MinZ;
-	float m_AvgX;
-	float m_AvgY;
-	float m_AvgZ;
+	static float32_t ScaleTable [];
+	float32_t m_MaxX;
+	float32_t m_MaxY;
+	float32_t m_MaxZ;
+	float32_t m_MinX;
+	float32_t m_MinY;
+	float32_t m_MinZ;
+	float32_t m_AvgX;
+	float32_t m_AvgY;
+	float32_t m_AvgZ;
 
 };
 

@@ -21,17 +21,17 @@ class CSemaphore
 {
 public:
 
-	CSemaphore (int maxcount = SEM_MAXCOUNT_INF);
+	CSemaphore (int32_t maxcount = SEM_MAXCOUNT_INF);
 
 	~CSemaphore ();
 
-	bool wait(int timeout = SEM_TIMEOUT_FOREVER);
+	bool wait(int32_t timeout = SEM_TIMEOUT_FOREVER);
 	void post(void);
 
 private:
 
 	sem_t m_Sem;
-	int m_MaxCnt;
+	int32_t m_MaxCnt;
 
 };
 

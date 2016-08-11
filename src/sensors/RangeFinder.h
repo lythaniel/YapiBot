@@ -25,7 +25,7 @@ protected:
 
 public:
 	virtual void setBus (CI2Cbus * bus) {m_I2Cbus = bus;}
-	virtual int getRange (void) = 0;
+	virtual int32_t getRange (void) = 0;
 
 protected:
 	CI2Cbus * m_I2Cbus;

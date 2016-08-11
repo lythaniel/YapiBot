@@ -22,9 +22,9 @@ CMutex::~CMutex ()
 	pthread_mutex_destroy(&m_Lock);
 }
 
-bool CMutex::get(int timeout)
+bool CMutex::get(int32_t timeout)
 {
-	int ret;
+	int32_t ret;
 	if (timeout == MUTEX_TIMEOUT_FOREVER)
 	{
 		ret = pthread_mutex_lock(&m_Lock);

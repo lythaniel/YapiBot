@@ -23,7 +23,7 @@ protected:
 
 public:
 	virtual void setBus (CI2Cbus * bus) {m_I2Cbus = bus;}
-	virtual float getHeading (void) = 0;
+	virtual float32_t getHeading (void) = 0;
 	virtual void startCalibration () {m_Calib = true;}
 	virtual void stopCalibration () {m_Calib = false;}
 

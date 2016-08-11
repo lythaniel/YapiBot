@@ -17,7 +17,7 @@ CEventObserver::~CEventObserver() {
 
 }
 
-void CEventObserver::notify (Event_t event, int data1,  void * data2)
+void CEventObserver::notify (Event_t event, int32_t data1,  void * data2)
 {
 	cbVector_t::iterator it;
 

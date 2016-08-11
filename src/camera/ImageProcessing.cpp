@@ -84,7 +84,7 @@ void CImageProcessing::VideoProcThread (void *)
 		//lock the chosen frame buffer, and copy it directly into the corresponding open gl texture
 		if (m_pCamera != NULL)
 		{
-			if(m_pCamera->BeginReadFrame(0,(const void  * *)&framedata,(int *)&framesz))
+			if(m_pCamera->BeginReadFrame(0,(const void  * *)&framedata,(int32_t *)&framesz))
 			{
 				//printf ("Camera frame readed\n");
 	#if 0
@@ -112,7 +112,7 @@ void CImageProcessing::VideoProcThread (void *)
 				float area = 0;
 				float new_area;
 				float trackidx = 0;
-				for (int j = 0; j < contours.size(); j++)
+				for (int32_t j = 0; j < contours.size(); j++)
 				{
 					r_rect.push_back (minAreaRect(contours[j]));
 					Point2f vertices[4];
@@ -123,12 +123,12 @@ void CImageProcessing::VideoProcThread (void *)
 						trackidx = j;
 						area = new_area;
 					}
-					for (int i = 0; i < 4; i++)
+					for (int32_t i = 0; i < 4; i++)
 					{
 						vertices[i].x =vertices[i].x * 4;
 						vertices[i].y =vertices[i].y * 4;
 					}
-					for (int i = 0; i < 4; i++)
+					for (int32_t i = 0; i < 4; i++)
 					{
 						line (img,vertices[i],vertices[(i+1)%4],Scalar(0,254,0));
 					}
@@ -139,7 +139,7 @@ void CImageProcessing::VideoProcThread (void *)
 				double angle;
 				if (r_rect.size() > 0)
 				{	//double angle;
-					//int pos;
+					//int32_t pos;
 					Point2f vertices[4];
 					r_rect[trackidx].points(vertices);
 					Point2f corner_low_0, corner_low_1;
@@ -229,7 +229,7 @@ void CImageProcessing::VideoProcThread (void *)
 
 }
 
-void CImageProcessing::setParameter (YapiBotParam_t param, char * buffer, unsigned int size)
+void CImageProcessing::setParameter (YapiBotParam_t param, int8_t * buffer, uint32_t size)
 {
 	if ((param & PARAM_MASK) == CAMERA_PARAM)
 	{

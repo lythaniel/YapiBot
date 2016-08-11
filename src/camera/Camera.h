@@ -21,8 +21,8 @@ class CCamera;
 class CCameraOutput
 {
 public:
-	int						Width;
-	int						Height;
+	int32_t						Width;
+	int32_t						Height;
 	MMAL_COMPONENT_T*		ResizerComponent;
 	MMAL_CONNECTION_T*		Connection;
 	MMAL_BUFFER_HEADER_T*	LockedBuffer;
@@ -32,14 +32,14 @@ public:
 
 	CCameraOutput();
 	~CCameraOutput();
-	bool Init(int width, int height, MMAL_COMPONENT_T* input_component, int input_port_idx, bool do_argb_conversion);
+	bool Init(int32_t width, int32_t height, MMAL_COMPONENT_T* input_component, int32_t input_port_idx, bool do_argb_conversion);
 	void Release();
 	void OnVideoBufferCallback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 	static void VideoBufferCallback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
-	int ReadFrame(void* buffer, int buffer_size);
-	bool BeginReadFrame(const void** out_buffer, int * out_buffer_size);
+	int32_t ReadFrame(void* buffer, int32_t buffer_size);
+	bool BeginReadFrame(const void** out_buffer, int32_t * out_buffer_size);
 	void EndReadFrame();
-	MMAL_POOL_T* EnablePortCallbackAndCreateBufferPool(MMAL_PORT_T* port, MMAL_PORT_BH_CB_T cb, int buffer_count);
+	MMAL_POOL_T* EnablePortCallbackAndCreateBufferPool(MMAL_PORT_T* port, MMAL_PORT_BH_CB_T cb, int32_t buffer_count);
 	MMAL_COMPONENT_T* CreateResizeComponentAndSetupPorts(MMAL_PORT_T* video_output_port, bool do_argb_conversion);
 
 
@@ -50,20 +50,20 @@ class CCamera
 {
 public:
 
-	int ReadFrame(int level, void* buffer, int buffer_size);
-	bool BeginReadFrame(int level, const void * * out_buffer, int * out_buffer_size);
-	void EndReadFrame(int level);
+	int32_t ReadFrame(int32_t level, void* buffer, int32_t buffer_size);
+	bool BeginReadFrame(int32_t level, const void * * out_buffer, int32_t * out_buffer_size);
+	void EndReadFrame(int32_t level);
 	MMAL_COMPONENT_T* getCameraComponent() {return CameraComponent;}
 	MMAL_COMPONENT_T* getSplitterComponent () {return SplitterComponent;}
 
-	void setParameter (YapiBotParam_t param, char * buffer, unsigned int size);
+	void setParameter (YapiBotParam_t param, int8_t * buffer, uint32_t size);
 	void getParameter (YapiBotParam_t param);
 
 private:
 	CCamera();
 	~CCamera();
 
-	bool Init(int width, int height, int framerate, int num_levels, bool do_argb_conversion);
+	bool Init(int32_t width, int32_t height, int32_t framerate, int32_t num_levels, bool do_argb_conversion);
 	void Release();
 	MMAL_COMPONENT_T* CreateCameraComponentAndSetupPorts();
 	MMAL_COMPONENT_T* CreateSplitterComponentAndSetupPorts(MMAL_PORT_T* video_ouput_port);
@@ -71,26 +71,26 @@ private:
 	void OnCameraControlCallback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 	static void CameraControlCallback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 
-	int							Width;
-	int							Height;
-	int							FrameRate;
+	int32_t							Width;
+	int32_t							Height;
+	int32_t							FrameRate;
 	RASPICAM_CAMERA_PARAMETERS	CameraParameters;
 	MMAL_COMPONENT_T*			CameraComponent;    
 	MMAL_COMPONENT_T*			SplitterComponent;
 	MMAL_CONNECTION_T*			VidToSplitConn;
 	CCameraOutput*				Outputs[4];
 
-	int							m_Saturation;
-	int							m_Contrast;
-	int							m_Brightness;
-	int							m_Sharpness;
-	int							m_Iso;
+	int32_t							m_Saturation;
+	int32_t							m_Contrast;
+	int32_t							m_Brightness;
+	int32_t							m_Sharpness;
+	int32_t							m_Iso;
 
 
 
-	friend CCamera* StartCamera(int width, int height, int framerate, int num_levels, bool do_argb_conversion);
+	friend CCamera* StartCamera(int32_t width, int32_t height, int32_t framerate, int32_t num_levels, bool do_argb_conversion);
 	friend void StopCamera();
 };
 
-CCamera* StartCamera(int width, int height, int framerate, int num_levels, bool do_argb_conversion=true);
+CCamera* StartCamera(int32_t width, int32_t height, int32_t framerate, int32_t num_levels, bool do_argb_conversion=true);
 void StopCamera();

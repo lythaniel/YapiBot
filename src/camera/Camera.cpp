@@ -24,7 +24,7 @@
 
 static CCamera* GCamera = NULL;
 
-CCamera* StartCamera(int width, int height, int framerate, int num_levels, bool do_argb_conversion)
+CCamera* StartCamera(int32_t width, int32_t height, int32_t framerate, int32_t num_levels, bool do_argb_conversion)
 {
 	//can't create more than one camera
 	if(GCamera != NULL)
@@ -244,7 +244,7 @@ MMAL_COMPONENT_T* CCamera::CreateSplitterComponentAndSetupPorts(MMAL_PORT_T* vid
 		goto error;
 	}
 
-	for(int i = 0; i < splitter->output_num; i++)
+	for(int32_t i = 0; i < splitter->output_num; i++)
 	{
 		output_port = splitter->output[i];
 		output_port->buffer_num = 3;
@@ -265,7 +265,7 @@ error:
 	return NULL;
 }
 
-bool CCamera::Init(int width, int height, int framerate, int num_levels, bool do_argb_conversion)
+bool CCamera::Init(int32_t width, int32_t height, int32_t framerate, int32_t num_levels, bool do_argb_conversion)
 {
 	//init broadcom host - QUESTION: can this be called more than once??
 	bcm_host_init();
@@ -319,7 +319,7 @@ bool CCamera::Init(int width, int height, int framerate, int num_levels, bool do
 	}
 
 	//setup all the outputs
-	for(int i = 0; i < num_levels; i++)
+	for(int32_t i = 0; i < num_levels; i++)
 	{
 		outputs[i] = new CCameraOutput();
 		if(!outputs[i]->Init(Width >> i,Height >> i,splitter,i,do_argb_conversion))
@@ -371,7 +371,7 @@ error:
 		mmal_component_destroy(camera);
 	if(splitter)
 		mmal_component_destroy(splitter);
-	for(int i = 0; i < 4; i++)
+	for(int32_t i = 0; i < 4; i++)
 	{
 		if(outputs[i])
 		{
@@ -384,7 +384,7 @@ error:
 
 void CCamera::Release()
 {
-	for(int i = 0; i < 4; i++)
+	for(int32_t i = 0; i < 4; i++)
 	{
 		if(Outputs[i])
 		{
@@ -409,17 +409,17 @@ void CCamera::OnCameraControlCallback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *b
 	printf("Camera control callback\n");
 }
 
-bool CCamera::BeginReadFrame(int level, const void * * out_buffer, int * out_buffer_size)
+bool CCamera::BeginReadFrame(int32_t level, const void * * out_buffer, int32_t * out_buffer_size)
 {
 	return Outputs[level] ? Outputs[level]->BeginReadFrame(out_buffer,out_buffer_size) : false;
 }
 
-void CCamera::EndReadFrame(int level)
+void CCamera::EndReadFrame(int32_t level)
 {
 	if(Outputs[level]) Outputs[level]->EndReadFrame();
 }
 
-int CCamera::ReadFrame(int level, void* dest, int dest_size)
+int32_t CCamera::ReadFrame(int32_t level, void* dest, int32_t dest_size)
 {
 	return Outputs[level] ? Outputs[level]->ReadFrame(dest,dest_size) : -1;
 }
@@ -434,7 +434,7 @@ CCameraOutput::~CCameraOutput()
 
 }
 
-bool CCameraOutput::Init(int width, int height, MMAL_COMPONENT_T* input_component, int input_port_idx, bool do_argb_conversion)
+bool CCameraOutput::Init(int32_t width, int32_t height, MMAL_COMPONENT_T* input_component, int32_t input_port_idx, bool do_argb_conversion)
 {
 	printf("Init camera output with %d/%d\n",width,height);
 	Width = width;
@@ -559,13 +559,13 @@ void CCameraOutput::VideoBufferCallback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T 
 	((CCameraOutput*)port->userdata)->OnVideoBufferCallback(port,buffer);
 }
 
-int CCameraOutput::ReadFrame(void* dest, int dest_size)
+int32_t CCameraOutput::ReadFrame(void* dest, int32_t dest_size)
 {
 	//default result is 0 - no data available
-	int res = 0;
+	int32_t res = 0;
 
 	//get buffer
-	const void* buffer; int buffer_len;
+	const void* buffer; int32_t buffer_len;
 	if(BeginReadFrame(&buffer,&buffer_len))
 	{
 		if(dest_size >= buffer_len)
@@ -585,7 +585,7 @@ int CCameraOutput::ReadFrame(void* dest, int dest_size)
 	return res;
 }
 
-bool CCameraOutput::BeginReadFrame(const void * * out_buffer, int * out_buffer_size)
+bool CCameraOutput::BeginReadFrame(const void * * out_buffer, int32_t * out_buffer_size)
 {
 	//printf("Attempting to read camera output\n");
 
@@ -695,7 +695,7 @@ error:
 	return NULL;
 }
 
-MMAL_POOL_T* CCameraOutput::EnablePortCallbackAndCreateBufferPool(MMAL_PORT_T* port, MMAL_PORT_BH_CB_T cb, int buffer_count)
+MMAL_POOL_T* CCameraOutput::EnablePortCallbackAndCreateBufferPool(MMAL_PORT_T* port, MMAL_PORT_BH_CB_T cb, int32_t buffer_count)
 {
 	MMAL_STATUS_T status;
 	MMAL_POOL_T* buffer_pool = 0;
@@ -722,8 +722,8 @@ MMAL_POOL_T* CCameraOutput::EnablePortCallbackAndCreateBufferPool(MMAL_PORT_T* p
 
 	//send all the buffers in our pool to the video port ready for use
 	{
-		int num = mmal_queue_length(buffer_pool->queue);
-		int q;
+		int32_t num = mmal_queue_length(buffer_pool->queue);
+		int32_t q;
 		for (q=0;q<num;q++)
 		{
 			MMAL_BUFFER_HEADER_T *buffer = mmal_queue_get(buffer_pool->queue);
@@ -748,9 +748,9 @@ error:
 	return NULL;
 }
 
-void CCamera::setParameter (YapiBotParam_t param, char * buffer, unsigned int size)
+void CCamera::setParameter (YapiBotParam_t param, int8_t * buffer, uint32_t size)
 {
-	int val;
+	int32_t val;
 	if (size < 4)
 	{
 		fprintf (stderr, "Cannot set camera parameter (not enough arguments)");
@@ -794,9 +794,9 @@ void CCamera::setParameter (YapiBotParam_t param, char * buffer, unsigned int si
 void CCamera::getParameter (YapiBotParam_t param)
 {
 	YapiBotParamAnswer_t answer;
-	Utils::fromInt((int)param, &answer.param);
+	Utils::fromInt((int32_t)param, &answer.param);
 
-	int val;
+	int32_t val;
 
 	switch (param)
 	{
@@ -823,5 +823,5 @@ void CCamera::getParameter (YapiBotParam_t param)
 
 	Utils::fromInt(val, &answer.val);
 
-	CNetwork::getInstance()->sendCmdPck (CmdInfoParam, (unsigned char *)&answer, sizeof(YapiBotParamAnswer_t));
+	CNetwork::getInstance()->sendCmdPck (CmdInfoParam, (uint8_t *)&answer, sizeof(YapiBotParamAnswer_t));
 }

@@ -24,51 +24,51 @@ CPythonApi::~CPythonApi()
 	CEventObserver::getInstance()->unRegister (this);
 }
 
-int CPythonApi::compassCalibration(void)
+int32_t CPythonApi::compassCalibration(void)
 {
 	CController::getInstance()->compassCalibration();
 	fprintf(stdout,"Python Api: Started Compass Calibration\n");
 	m_EventSem.wait();
 	fprintf(stdout,"Python Api: Compass Calibration complete with event: %d\n", m_LastEvent);
-	return (int) m_LastEvent;
+	return (int32_t) m_LastEvent;
 }
 
-int CPythonApi::moveStraight (int distance)
+int32_t CPythonApi::moveStraight (int32_t distance)
 {
 	CController::getInstance()->moveStraight(distance);
 	fprintf(stdout,"Python Api: Started move straight (%d)\n",distance);
 	m_EventSem.wait();
 	fprintf(stdout,"Python Api: Move complete with event = %d\n", m_LastEvent);
-	return (int) m_LastEvent;
+	return (int32_t) m_LastEvent;
 }
-int CPythonApi::alignBearing (int bearing)
+int32_t CPythonApi::alignBearing (int32_t bearing)
 {
 	CController::getInstance()->alignBearing(bearing);
 	fprintf(stdout,"Python Api: Started align bearing (%d)\n",bearing);
 	m_EventSem.wait();
 	fprintf(stdout,"Python Api: Align bearing complete with event = %d\n", m_LastEvent);
-	return (int) m_LastEvent;
+	return (int32_t) m_LastEvent;
 }
 
-int CPythonApi::moveBearing (int bearing, int distance)
+int32_t CPythonApi::moveBearing (int32_t bearing, int32_t distance)
 {
 	CController::getInstance()->moveBearing(bearing,distance);
 	fprintf(stdout,"Python Api: Started move bearing (bearing = %d distance = %d)\n",bearing, distance);
 	m_EventSem.wait();
 	fprintf(stdout,"Python Api: Move bearing complete with event = %d\n", m_LastEvent);
-	return (int) m_LastEvent;
+	return (int32_t) m_LastEvent;
 
 }
-int CPythonApi::rotate (int rot)
+int32_t CPythonApi::rotate (int32_t rot)
 {
 	CController::getInstance()->rotate(rot);
 	fprintf(stdout,"Python Api: Started rotate (%d)\n",rot);
 	m_EventSem.wait();
 	fprintf(stdout,"Python Api: Rotate complete with event = %d\n", m_LastEvent);
-	return (int) m_LastEvent;
+	return (int32_t) m_LastEvent;
 }
 
-void CPythonApi::EventCallback (Event_t evt, int data1, void * data2)
+void CPythonApi::EventCallback (Event_t evt, int32_t data1, void * data2)
 {
 	m_LastEvent = evt;
 	m_EventSem.post();

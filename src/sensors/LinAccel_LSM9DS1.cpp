@@ -66,8 +66,8 @@ CLinAccel_LSM9DS1::~CLinAccel_LSM9DS1() {
 
 void CLinAccel_LSM9DS1::setBus (CI2Cbus * bus)
 {
-	unsigned char buff[5];
-	unsigned char whoAmI = 0;
+	uint8_t buff[5];
+	uint8_t whoAmI = 0;
 
 	m_I2Cbus = bus;
 
@@ -94,9 +94,9 @@ void CLinAccel_LSM9DS1::setBus (CI2Cbus * bus)
 
 sLinAccel CLinAccel_LSM9DS1::getAccel (void)
 {
-	unsigned char buffer[6];
+	uint8_t buffer[6];
 	sLinAccel ret = {0,0,0};
-	short sx,sy,sz;
+	int16_t sx,sy,sz;
 	if (m_I2Cbus != NULL)
 	{
 		if (6 == m_I2Cbus->read(LSM9DS1_GXL_I2C_ADD, OUT_X_L_XL, buffer,6))

@@ -137,7 +137,7 @@ void CController::run(void *)
 		Utils::fromInt(m_Status.accel_x , &TxStatus.accel_x);
 		Utils::fromInt(m_Status.accel_y , &TxStatus.accel_y);
 
-		CNetwork::getInstance()->sendCmdPck (CmdInfoStatus,(unsigned char *)&TxStatus, sizeof(YapiBotStatus_t));
+		CNetwork::getInstance()->sendCmdPck (CmdInfoStatus,(uint8_t *)&TxStatus, sizeof(YapiBotStatus_t));
 	}
 
 }
@@ -168,7 +168,7 @@ void CController::runCompassCalibration (YapiBotStatus_t status)
 	{
 
 		//Sensor should be calibrated, let's align to the north.
-		int err = status.heading;
+		int32_t err = status.heading;
 		if (err > 180)
 		{
 			err -= 360;
@@ -260,8 +260,8 @@ void CController::runMoveStraight (YapiBotStatus_t status)
 		}
 		else
 		{
-			int err = (m_DistMovedLeft - m_DistMovedRight) * m_MvtErrGain;
-			int dir = 100;
+			int32_t err = (m_DistMovedLeft - m_DistMovedRight) * m_MvtErrGain;
+			int32_t dir = 100;
 			if (m_ReqLeftMov < 0) dir = -100;
 
 			fprintf(stdout,"Moving (req = %d) distLeft = %d,  distRight = %d, error = %d\n",m_ReqLeftMov, m_DistMovedLeft,m_DistMovedRight,err);
@@ -273,7 +273,7 @@ void CController::runMoveStraight (YapiBotStatus_t status)
 void CController::runAlignBearing (YapiBotStatus_t status)
 {
 	//Sensor should be calibrated, let's align to the north.
-		int err = status.heading - m_RequestedBearing;
+		int32_t err = status.heading - m_RequestedBearing;
 		if (err > 180)
 		{
 			err -= 360;
@@ -338,7 +338,7 @@ void CController::runMoveBearing (YapiBotStatus_t status)
 	}
 	else
 	{
-		int err = status.heading - m_RequestedBearing;
+		int32_t err = status.heading - m_RequestedBearing;
 		if (err > 180)
 		{
 			err -= 360;
@@ -348,7 +348,7 @@ void CController::runMoveBearing (YapiBotStatus_t status)
 			err += 360;
 		}
 		err = err * m_BearingErrGain;
-		int dir = 100;
+		int32_t dir = 100;
 		if (m_ReqLeftMov < 0) dir = -100;
 
 		fprintf(stdout,"Moving (dist = %d, bearing = %d) distLeft = %d,  distRight = %d, error = %d\n",m_ReqLeftMov,m_RequestedBearing, m_DistMovedLeft,m_DistMovedRight,err);
@@ -375,7 +375,7 @@ void CController::runRefreshMap (YapiBotStatus_t status)
 	else
 	{
 
-		int err = status.heading - m_RequestedBearing;
+		int32_t err = status.heading - m_RequestedBearing;
 		if (err > 180)
 		{
 			err -= 360;
@@ -444,7 +444,7 @@ void CController::compassCalibration (void)
 
 	m_Lock.release();
 }
-void CController::moveStraight (int distance)
+void CController::moveStraight (int32_t distance)
 {
 	m_Lock.get();
 	if (m_State != CTRL_STATE_IDLE)
@@ -472,7 +472,7 @@ void CController::moveStraight (int distance)
 	m_Lock.release();
 
 }
-void CController::alignBearing (int bearing)
+void CController::alignBearing (int32_t bearing)
 {
 	m_Lock.get();
 	if (m_State != CTRL_STATE_IDLE)
@@ -495,7 +495,7 @@ void CController::alignBearing (int bearing)
 	m_Lock.release();
 
 }
-void CController::moveBearing (int bearing, int distance)
+void CController::moveBearing (int32_t bearing, int32_t distance)
 {
 	m_Lock.get();
 	if (m_State != CTRL_STATE_IDLE)
@@ -523,7 +523,7 @@ void CController::moveBearing (int bearing, int distance)
 	m_Lock.release();
 }
 
-void CController::rotate (int rot)
+void CController::rotate (int32_t rot)
 {
 	m_Lock.get();
 	if (m_State != CTRL_STATE_IDLE)
@@ -577,7 +577,7 @@ void CController::refreshMap (void)
 	m_Lock.release();
 }
 
-void CController::CmdPckReceived (YapiBotCmd_t cmd, char * buffer, unsigned int size)
+void CController::CmdPckReceived (YapiBotCmd_t cmd, int8_t * buffer, uint32_t size)
 {
 	YapiBotCmd_t cmdType;
 
@@ -606,9 +606,9 @@ void CController::CmdPckReceived (YapiBotCmd_t cmd, char * buffer, unsigned int 
 
 }
 
-void CController::processCmdMove (YapiBotCmd_t cmd, char * buffer, unsigned int size)
+void CController::processCmdMove (YapiBotCmd_t cmd, int8_t * buffer, uint32_t size)
 {
-	int x,y,speed;
+	int32_t x,y,speed;
 
 	m_Lock.get();
 	if (m_State != CTRL_STATE_IDLE)
@@ -687,9 +687,9 @@ void CController::processCmdMove (YapiBotCmd_t cmd, char * buffer, unsigned int 
 
 }
 
-void CController::processCmd (YapiBotCmd_t cmd, char * buffer, unsigned int size)
+void CController::processCmd (YapiBotCmd_t cmd, int8_t * buffer, uint32_t size)
 {
-	int dist,bearing;
+	int32_t dist,bearing;
 
 	m_Lock.get();
 	if (m_State != CTRL_STATE_IDLE)
@@ -736,7 +736,7 @@ void CController::processCmd (YapiBotCmd_t cmd, char * buffer, unsigned int size
 	}
 }
 
-void CController::processCmdParam (YapiBotCmd_t cmd, char * buffer, unsigned int size)
+void CController::processCmdParam (YapiBotCmd_t cmd, int8_t * buffer, uint32_t size)
 {
 	YapiBotParam_t param = (YapiBotParam_t)Utils::toInt(&buffer[0]);
 	printf("ProcessCmdParam with param = 0x%x\n", param);
@@ -781,9 +781,9 @@ void CController::processCmdParam (YapiBotCmd_t cmd, char * buffer, unsigned int
 
 }
 
-void CController::setParameter (YapiBotParam_t param, char * buffer, unsigned int size)
+void CController::setParameter (YapiBotParam_t param, int8_t * buffer, uint32_t size)
 {
-	unsigned int val;
+	uint32_t val;
 	if (size < 4)
 	{
 		fprintf (stderr, "Cannot set controller parameter (not enough arguments)");
@@ -820,7 +820,7 @@ void CController::setParameter (YapiBotParam_t param, char * buffer, unsigned in
 void CController::getParameter (YapiBotParam_t param)
 {
 	YapiBotParamAnswer_t answer;
-	Utils::fromInt((int)param, &answer.param);
+	Utils::fromInt((int32_t)param, &answer.param);
 
 	switch (param)
 	{
@@ -843,18 +843,18 @@ void CController::getParameter (YapiBotParam_t param)
 			fprintf (stderr, "Unknown controller parameter !");
 			return;
 	}
-	CNetwork::getInstance()->sendCmdPck (CmdInfoParam, (unsigned char *)&answer, sizeof(YapiBotParamAnswer_t));
+	CNetwork::getInstance()->sendCmdPck (CmdInfoParam, (uint8_t *)&answer, sizeof(YapiBotParamAnswer_t));
 }
 
-void CController::EventCallback (Event_t evt, int data1, void * data2)
+void CController::EventCallback (Event_t evt, int32_t data1, void * data2)
 {
 	fprintf(stdout,"Event received: %x, data1 = %d, data2 = %d\n",evt,data1,data2);
 }
 
 
-/*int CController::toInt (char * buff)
+/*int32_t CController::toInt (int8_t * buff)
 {
-	int ret = (buff [0] << 24) + (buff [1] << 16) + (buff [2] << 8) + buff [3];
+	int32_t ret = (buff [0] << 24) + (buff [1] << 16) + (buff [2] << 8) + buff [3];
 	return (ret);
 }*/
 
