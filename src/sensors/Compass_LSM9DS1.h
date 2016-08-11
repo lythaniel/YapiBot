@@ -22,6 +22,7 @@ public:
 	virtual void setBus (CI2Cbus * bus);
 	virtual float getHeading (void);
 	virtual void stopCalibration ();
+	virtual void startCalibration ();
 
 
 private:
@@ -32,9 +33,9 @@ private:
 	float m_MinX;
 	float m_MinY;
 	float m_MinZ;
-	float m_AvgX;
-	float m_AvgY;
-	float m_AvgZ;
+	short m_CalX;
+	short m_CalY;
+	short m_CalZ;
 
 
 };
