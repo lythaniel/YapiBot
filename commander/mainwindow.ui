@@ -362,9 +362,9 @@
     <property name="geometry">
      <rect>
       <x>1050</x>
-      <y>50</y>
+      <y>159</y>
       <width>400</width>
-      <height>400</height>
+      <height>371</height>
      </rect>
     </property>
    </widget>
@@ -408,6 +408,37 @@
       <width>121</width>
       <height>121</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QwtDial" name="AngularRatePlot">
+    <property name="geometry">
+     <rect>
+      <x>1030</x>
+      <y>0</y>
+      <width>121</width>
+      <height>121</height>
+     </rect>
+    </property>
+    <property name="lowerBound">
+     <double>-5.000000000000000</double>
+    </property>
+    <property name="upperBound">
+     <double>5.000000000000000</double>
+    </property>
+    <property name="scaleMaxMajor">
+     <number>10</number>
+    </property>
+    <property name="scaleMaxMinor">
+     <number>5</number>
+    </property>
+    <property name="lineWidth">
+     <number>4</number>
+    </property>
+    <property name="minScaleArc">
+     <double>20.000000000000000</double>
+    </property>
+    <property name="maxScaleArc">
+     <double>340.000000000000000</double>
     </property>
    </widget>
   </widget>

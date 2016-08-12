@@ -11,12 +11,14 @@
 #include "Compass_HMC5883L.h"
 #include "Compass_LSM9DS1.h"
 #include "RangeFinder_2Y0A21.h"
-#include "LinAccel_LSM9DS1.h"
+#include "AccelGyro_LSM9DS1.h"
+
 
 CSensorFactory::CSensorFactory() :
 m_Compass(NULL),
 m_RangeFinder(NULL),
-m_LinAccel(NULL)
+m_Accel(NULL),
+m_Gyro(NULL)
 {
 
 
@@ -31,9 +33,9 @@ CSensorFactory::~CSensorFactory() {
 	{
 		delete m_RangeFinder;
 	}
-	if (m_LinAccel != NULL)
+	if (m_Accel != NULL)
 	{
-		delete m_LinAccel;
+		delete m_Accel;
 	}
 }
 
@@ -97,14 +99,21 @@ CRangeFinder * CSensorFactory::getRangeFinder (void)
 	return m_RangeFinder;
 }
 
-CLinAccel * CSensorFactory::createLinAccel (eLinAccelType type)
+CAccelerometer * CSensorFactory::createAccelerometer (eAccelType type)
 {
-	if (m_LinAccel == NULL)
+	if (m_Accel == NULL)
 	{
 		switch (type)
 		{
-		case LINACCEL_LSM9DS1:
-			m_LinAccel = new CLinAccel_LSM9DS1();
+		case ACCEL_LSM9DS1:
+			if (m_Gyro == NULL)
+			{
+				m_Accel = new CAccelGyro_LSM9DS1();
+			}
+			else
+			{
+				m_Accel = dynamic_cast<CAccelerometer *>(m_Accel);
+			}
 			break;
 		default:
 			fprintf (stderr, "[SENSORS] Impossible to create unknown linear accelerometer type");
@@ -116,11 +125,47 @@ CLinAccel * CSensorFactory::createLinAccel (eLinAccelType type)
 		fprintf (stdout, "[SENSORS] Warning, trying to create linear accelerometer while it already exists.");
 	}
 
-	return m_LinAccel;
+	return m_Accel;
 
 }
 
-CLinAccel * CSensorFactory::getLinAccel (void)
+CAccelerometer * CSensorFactory::getAccelerometer (void)
 {
-	return m_LinAccel;
+	return m_Accel;
+}
+
+
+CGyroscope * CSensorFactory::createGyroscope (eGyroType type)
+{
+	if (m_Gyro == NULL)
+	{
+		switch (type)
+		{
+		case GYRO_LSM9DS1:
+			if (m_Accel == NULL)
+			{
+				m_Gyro = new CAccelGyro_LSM9DS1();
+			}
+			else
+			{
+				m_Gyro = dynamic_cast<CGyroscope * >(m_Accel);
+			}
+			break;
+		default:
+			fprintf (stderr, "[SENSORS] Impossible to create unknown gyroscope type");
+			break;
+		}
+	}
+	else
+	{
+		fprintf (stdout, "[SENSORS] Warning, trying to create gyroscope while it already exists.");
+	}
+
+	return m_Gyro;
+
+}
+
+CGyroscope * CSensorFactory::getGyroscope (void)
+{
+	return m_Gyro;
 }

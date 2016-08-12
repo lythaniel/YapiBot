@@ -164,6 +164,9 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     ui->Compass->setPalette( newPalette );
+    ui->AngularRatePlot->setPalette( newPalette);
+    ui->AngularRatePlot->setNeedle(new QwtDialSimpleNeedle(QwtDialSimpleNeedle::Arrow,true,Qt::white,Qt::gray));
+
 
     const QwtInterval radialInterval( 0.0, 2.0 );
     const QwtInterval azimuthInterval( 0.0, 2* M_PI );
@@ -183,17 +186,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QwtPolarGrid * d_grid = new QwtPolarGrid();
     d_grid->setPen( QPen( Qt::white ) );
-    /*for ( int scaleId = 0; scaleId < QwtPolar::ScaleCount; scaleId++ )
-    {
-        d_grid->showGrid( scaleId );
-        d_grid->showMinorGrid( scaleId, false );
 
-        QPen minorPen( Qt::gray );
-#if 0
-        minorPen.setStyle( Qt::DotLine );
-#endif
-        d_grid->setMinorGridPen( scaleId, minorPen );
-    }*/
     d_grid->setAxisPen( QwtPolar::AxisAzimuth, QPen( Qt::black ) );
     d_grid->showAxis( QwtPolar::AxisAzimuth, false );
     d_grid->showAxis( QwtPolar::AxisLeft, false );
@@ -394,6 +387,8 @@ void MainWindow::processCmd(YapiBotCmd_t cmd, unsigned char * payload, unsigned 
             int measRight = toInt(&payload[24]);
             int accelX = toInt(&payload[28]);
             int accelY = toInt(&payload[32]);
+            int rotZ = toInt(&payload[36]);
+            float frotZ = (float)rotZ * 5 / 32768;
             ui->speedLeft->setValue(abs(speedLeft));
             ui->speedRight->setValue(abs(speedRight));
             ui->heading->display(heading);
@@ -404,6 +399,7 @@ void MainWindow::processCmd(YapiBotCmd_t cmd, unsigned char * payload, unsigned 
             ui->measRight->setText(QString::number(measRight));
             m_AccelData->setValue(accelX,accelY);
             ui->AccelPlot->replot();
+            ui->AngularRatePlot->setValue(frotZ);
         }
         else
         {

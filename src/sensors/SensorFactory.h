@@ -14,7 +14,8 @@
 
 #include "Compass.h"
 #include "RangeFinder.h"
-#include "LinAccel.h"
+#include "Accelerometer.h"
+#include "Gyroscope.h"
 
 typedef enum
 {
@@ -29,8 +30,13 @@ typedef enum
 
 typedef enum
 {
-	LINACCEL_LSM9DS1
-} eLinAccelType;
+	ACCEL_LSM9DS1
+} eAccelType;
+
+typedef enum
+{
+	GYRO_LSM9DS1
+} eGyroType;
 
 class CSensorFactory : public CSingleton<CSensorFactory>
 {
@@ -43,13 +49,16 @@ public:
 	CCompass * getCompass (void);
 	CRangeFinder * createRangeFinder (eRangeFinderType type);
 	CRangeFinder * getRangeFinder (void);
-	CLinAccel* createLinAccel (eLinAccelType type);
-	CLinAccel * getLinAccel (void);
+	CAccelerometer* createAccelerometer (eAccelType type);
+	CAccelerometer * getAccelerometer (void);
+	CGyroscope* createGyroscope (eGyroType type);
+	CGyroscope * getGyroscope (void);
 
 private:
 	CCompass * m_Compass;
 	CRangeFinder * m_RangeFinder;
-	CLinAccel * m_LinAccel;
+	CAccelerometer * m_Accel;
+	CGyroscope * m_Gyro;
 
 };
 

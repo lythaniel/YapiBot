@@ -107,7 +107,7 @@ add_executable(
 	script/PythonBinding.cpp
 	sensors/Compass_HMC5883L.cpp
 	sensors/Compass_LSM9DS1.cpp
-	sensors/LinAccel_LSM9DS1.cpp
+	sensors/AccelGyro_LSM9DS1.cpp
 	sensors/RangeFinder_2Y0A21.cpp
 	sensors/SensorFactory.cpp
 	utils/Sampler.cpp

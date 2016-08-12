@@ -84,7 +84,8 @@ void CController::run(void *)
 		CMotors * motors = CMotors::getInstance();
 		CCompass * compass = CSensorFactory::getInstance()->getCompass();
 		CRangeFinder * rangeFinder = CSensorFactory::getInstance()->getRangeFinder();
-		CLinAccel * linAccel = CSensorFactory::getInstance()->getLinAccel();
+		CAccelerometer * accel = CSensorFactory::getInstance()->getAccelerometer();
+		CGyroscope	* gyro = CSensorFactory::getInstance()->getGyroscope();
 
 		m_Status.speed_left = motors->getLeftSpeed();
 		m_Status.speed_right = motors->getRightSpeed();
@@ -94,9 +95,12 @@ void CController::run(void *)
 		m_Status.meas_left = motors->getLeftMeas();
 		m_Status.meas_right = motors->getRightMeas();
 
-		sLinAccel accel = linAccel->getAccel();
-		m_Status.accel_x = accel.x;
-		m_Status.accel_y = accel.y;
+		sAccel acc = accel->getAccel();
+		m_Status.accel_x = acc.x;
+		m_Status.accel_y = acc.y;
+
+		sAngularRate angRate = gyro->getAngularRate();
+		m_Status.rot_z = angRate.z;
 
 
 		m_Lock.get();
@@ -136,6 +140,7 @@ void CController::run(void *)
 		Utils::fromInt(m_Status.meas_right , &TxStatus.meas_right);
 		Utils::fromInt(m_Status.accel_x , &TxStatus.accel_x);
 		Utils::fromInt(m_Status.accel_y , &TxStatus.accel_y);
+		Utils::fromInt(m_Status.rot_z , &TxStatus.rot_z);
 
 		CNetwork::getInstance()->sendCmdPck (CmdInfoStatus,(uint8_t *)&TxStatus, sizeof(YapiBotStatus_t));
 	}

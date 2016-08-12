@@ -1,5 +1,5 @@
 /*
- * LinAccel.h
+ * Accelerometer.h
  *
  * Copyright (C) 2016 Cyrille Potereau
  *
@@ -7,8 +7,8 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
-#ifndef ACCEL_H_
-#define ACCEL_H_
+#ifndef ACCELEROMETER_H_
+#define ACCELEROMETER_H_
 
 
 #include <stddef.h>
@@ -20,17 +20,17 @@ typedef struct {
 	int32_t x;
 	int32_t y;
 	int32_t z;
-} sLinAccel;
+} sAccel;
 
-class CLinAccel {
+class CAccelerometer {
 		friend class CSensorFactory;
 protected:
-		CLinAccel() : m_I2Cbus(NULL) {};
-	virtual ~CLinAccel() {};
+		CAccelerometer() : m_I2Cbus(NULL) {};
+	virtual ~CAccelerometer() {};
 
 public:
 	virtual void setBus (CI2Cbus * bus) {m_I2Cbus = bus;}
-	virtual sLinAccel getAccel (void) = 0;
+	virtual sAccel getAccel (void) = 0;
 
 protected:
 	CI2Cbus * m_I2Cbus;
@@ -38,4 +38,4 @@ protected:
 
 
 
-#endif /* ACCEL_H_ */
+#endif /* ACCELEROMETER_H_ */

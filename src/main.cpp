@@ -64,10 +64,16 @@ int main(int argc, const char **argv)
 	}
 
 	//Create linear accelerometer
-	CLinAccel * linAccel = CSensorFactory::getInstance()->createLinAccel(LINACCEL_LSM9DS1);
-	if (linAccel != NULL)
+	CAccelerometer * accel = CSensorFactory::getInstance()->createAccelerometer(ACCEL_LSM9DS1);
+	if (accel != NULL)
 	{
-		linAccel->setBus(&i2c);
+		accel->setBus(&i2c);
+	}
+	//Create linear accelerometer
+	CGyroscope * gyro = CSensorFactory::getInstance()->createGyroscope(GYRO_LSM9DS1);
+	if (gyro != NULL)
+	{
+		gyro->setBus(&i2c);
 	}
 
 	//Create the mapper.
