@@ -58,16 +58,16 @@ const ParamList_t gParamList [NUM_PARAM] =
 class CAccelData: public QwtSeriesData<QwtPointPolar>
 {
 public:
-    CAccelData( int x, int y )
+    CAccelData( float x, float y )
     {
-        QPointF point ((qreal)y/16384,(qreal)x/16384);
+        QPointF point ((qreal)y,(qreal)x);
         coord.setPoint(point);
 
     }
 
-    void setValue(int x, int y)
+    void setValue(float x, float y)
     {
-        QPointF point ((qreal)y/16384,(qreal)x/16384);
+        QPointF point ((qreal)y,(qreal)x);
         coord.setPoint(point);
     }
 
@@ -385,10 +385,9 @@ void MainWindow::processCmd(YapiBotCmd_t cmd, unsigned char * payload, unsigned 
             int range = toInt(&payload[16]);
             int measLeft = toInt(&payload[20]);
             int measRight = toInt(&payload[24]);
-            int accelX = toInt(&payload[28]);
-            int accelY = toInt(&payload[32]);
-            int rotZ = toInt(&payload[36]);
-            float frotZ = (float)rotZ * 5 / 32768;
+            float accelX = toFloat(&payload[28]);
+            float accelY = toFloat(&payload[32]);
+            float rotZ = toFloat(&payload[36]);
             ui->speedLeft->setValue(abs(speedLeft));
             ui->speedRight->setValue(abs(speedRight));
             ui->heading->display(heading);
@@ -399,7 +398,7 @@ void MainWindow::processCmd(YapiBotCmd_t cmd, unsigned char * payload, unsigned 
             ui->measRight->setText(QString::number(measRight));
             m_AccelData->setValue(accelX,accelY);
             ui->AccelPlot->replot();
-            ui->AngularRatePlot->setValue(frotZ);
+            ui->AngularRatePlot->setValue(rotZ / 180 * 3.14);
         }
         else
         {
@@ -502,6 +501,12 @@ void MainWindow::on_CameraTild_valueChanged(int value)
 int MainWindow::toInt (void * buff)
 {
     int ret;
+    memcpy (&ret,buff,4);
+    return (ret);
+}
+float MainWindow::toFloat (void * buff)
+{
+    float ret;
     memcpy (&ret,buff,4);
     return (ret);
 }

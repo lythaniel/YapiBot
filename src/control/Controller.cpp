@@ -95,11 +95,19 @@ void CController::run(void *)
 		m_Status.meas_left = motors->getLeftMeas();
 		m_Status.meas_right = motors->getRightMeas();
 
-		sAccel acc = accel->getAccel();
+		sAccel acc = {0, 0, 0};
+		while (accel->accelSamplesAvailable())
+		{
+			acc = accel->getAccel();
+		}
 		m_Status.accel_x = acc.x;
 		m_Status.accel_y = acc.y;
 
-		sAngularRate angRate = gyro->getAngularRate();
+		sAngularRate angRate = {0, 0, 0};
+		while (gyro->angRateSamplesAvailable())
+		{
+			angRate = gyro->getAngularRate();
+		}
 		m_Status.rot_z = angRate.z;
 
 
@@ -138,9 +146,9 @@ void CController::run(void *)
 		Utils::fromInt(m_Status.range , &TxStatus.range);
 		Utils::fromInt(m_Status.meas_left, &TxStatus.meas_left);
 		Utils::fromInt(m_Status.meas_right , &TxStatus.meas_right);
-		Utils::fromInt(m_Status.accel_x , &TxStatus.accel_x);
-		Utils::fromInt(m_Status.accel_y , &TxStatus.accel_y);
-		Utils::fromInt(m_Status.rot_z , &TxStatus.rot_z);
+		Utils::fromFloat(m_Status.accel_x , &TxStatus.accel_x);
+		Utils::fromFloat(m_Status.accel_y , &TxStatus.accel_y);
+		Utils::fromFloat(m_Status.rot_z , &TxStatus.rot_z);
 
 		CNetwork::getInstance()->sendCmdPck (CmdInfoStatus,(uint8_t *)&TxStatus, sizeof(YapiBotStatus_t));
 	}

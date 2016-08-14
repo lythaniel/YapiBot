@@ -77,6 +77,7 @@ private:
 
     void fromInt (int val, void * buff);
     int toInt (void * buff);
+    float toFloat(void * buff);
 
     Ui::MainWindow *ui;
 

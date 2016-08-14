@@ -9,6 +9,11 @@
 
 #include <AccelGyro_LSM9DS1.h>
 #include <cstdio>
+#include <pigpiod_if2.h>
+#include <string.h>
+
+#define INT1_AG_GPIO			26
+#define INT2_AG_GPIO			19
 
 #define LSM9DS1_GXL_I2C_ADD 	0x6A
 
@@ -80,24 +85,51 @@
 #define INT_GEN_DUR_G			0x37
 
 
-#define CTRL_REG1_G_VAL			0xC0	//Data rate = 952Hz / FS = 245dps / BW= 00 (33Hz with this data rate)
+#define CTRL_REG1_G_VAL			0x80	//Data rate = 238Hz / FS = 245dps / BW= 00
 #define CTRL_REG2_G_VAL			0x00	//Filtering disabled.
 #define CTRL_REG3_G_VAL			0x00	//Low power disabled, HPF disabled, HP cutoff 0000
 #define ORIENT_CFG_G_VAL		0x00	//Default orientation.
 #define CTRL_REG4_VAL			0x38	//gyro X,Y,Z enabled, latched interrupt disabled, 4D position disabled.
 
 #define CTRL_REG5_XL_VAL		0x38	//No decimation, x,y and z enabled.
-#define CTRL_REG6_XL_VAL		0x20	//data rate 10Hz, full scale 2g, auto bandwidth
+#define CTRL_REG6_XL_VAL		0x80	//data rate 238Hz, full scale 2g, auto bandwidth
 #define CTRL_REG7_XL_VAL		0x00	//High res disabled, filtering disabled.
 #define CTRL_REG8_XL_VAL		0x04	//auto increment address active.
 
-CAccelGyro_LSM9DS1::CAccelGyro_LSM9DS1() {
+#define FIFO_CTRL_VAL			0xCF	//FIFO in continuous mode, Threshold = 16;
+#define INT1_CTRL_VAL			0x08	//Int1 enabled on fifo threshold.
+#define CTRL_REG9_VAL			0x02	//Fifo enabled
 
+#define GYRO_FS					245		// 245degree per second (must match value in CTRL_REG1_G_VAL)
+#define ACCEL_FS				2		// 2g (must match value in CTRL_REG6_XL_VAL)
+
+
+static void lsm9ds1_int1_ag (int32_t pi, uint32_t gpio, uint32_t level, uint32_t tick, void * user)
+{
+	CAccelGyro_LSM9DS1 * lsm9ds1 = (CAccelGyro_LSM9DS1 *) user;
+	lsm9ds1->fifoReady ();
+}
+
+CAccelGyro_LSM9DS1::CAccelGyro_LSM9DS1() :
+m_Initialized(false),
+m_Pi(-1),
+m_NumAccelSamples(0),
+m_NumAngRateSamples(0),
+m_AccelBufferInIdx(0),
+m_AngRateBufferInIdx(0),
+m_AccelBufferOutIdx(0),
+m_AngRateBufferOutIdx(0)
+{
+	memset (m_RawSamples,0x00,sizeof (m_RawSamples));
+	memset (m_AccelBuffer,0x00,sizeof (m_AccelBuffer));
+	memset (m_AngRateBuffer,0x00,sizeof (m_AngRateBuffer));
 
 }
 
-CAccelGyro_LSM9DS1::~CAccelGyro_LSM9DS1() {
-
+CAccelGyro_LSM9DS1::~CAccelGyro_LSM9DS1()
+{
+	callback_cancel(m_IntCallbackId[0]);
+	pigpio_stop(m_Pi);
 }
 
 void CAccelGyro_LSM9DS1::setBus (CI2Cbus * bus)
@@ -118,25 +150,54 @@ void CAccelGyro_LSM9DS1::setBus (CI2Cbus * bus)
 			return;
 		}
 
-		//Configure the Accelerometer.
-		buff[0] = CTRL_REG5_XL;
-		buff[1] = CTRL_REG5_XL_VAL;
-		buff[2] = CTRL_REG6_XL_VAL;
-		buff[3] = CTRL_REG7_XL_VAL;
-		buff[4] = CTRL_REG8_XL_VAL;
-		CAccelerometer::m_I2Cbus->write(LSM9DS1_GXL_I2C_ADD,buff, 5);
 
-		//Configure the gyroscope.
-		buff[0] = CTRL_REG1_G;
-		buff[1] = CTRL_REG1_G_VAL;
-		buff[2] = CTRL_REG2_G_VAL;
-		buff[3] = CTRL_REG3_G_VAL;
-		buff[4] = ORIENT_CFG_G_VAL;
-		CAccelerometer::m_I2Cbus->write(LSM9DS1_GXL_I2C_ADD,buff, 5);
+		//Connect the interrupt handler.
+		if (m_Initialized == false)
+		{
+			m_Pi = pigpio_start(NULL,NULL); //local gpio
+			set_mode (m_Pi, INT1_AG_GPIO, PI_INPUT);
+			m_IntCallbackId[0] = callback_ex(m_Pi, INT1_AG_GPIO, RISING_EDGE, lsm9ds1_int1_ag, (void *)this);
 
-		buff[0] = CTRL_REG4;
-		buff[1] = CTRL_REG4_VAL;
-		CAccelerometer::m_I2Cbus->write(LSM9DS1_GXL_I2C_ADD,buff, 2);
+
+
+			//Configure the Accelerometer.
+			buff[0] = CTRL_REG5_XL;
+			buff[1] = CTRL_REG5_XL_VAL;
+			buff[2] = CTRL_REG6_XL_VAL;
+			buff[3] = CTRL_REG7_XL_VAL;
+			buff[4] = CTRL_REG8_XL_VAL;
+			CAccelerometer::m_I2Cbus->write(LSM9DS1_GXL_I2C_ADD,buff, 5);
+
+			//Configure the gyroscope.
+			buff[0] = CTRL_REG1_G;
+			buff[1] = CTRL_REG1_G_VAL;
+			buff[2] = CTRL_REG2_G_VAL;
+			buff[3] = CTRL_REG3_G_VAL;
+			buff[4] = ORIENT_CFG_G_VAL;
+			CAccelerometer::m_I2Cbus->write(LSM9DS1_GXL_I2C_ADD,buff, 5);
+
+			buff[0] = CTRL_REG4;
+			buff[1] = CTRL_REG4_VAL;
+			CAccelerometer::m_I2Cbus->write(LSM9DS1_GXL_I2C_ADD,buff, 2);
+
+			//Configure FIFO
+			buff[0] = FIFO_CTRL;
+			buff[1] = FIFO_CTRL_VAL;
+			CAccelerometer::m_I2Cbus->write(LSM9DS1_GXL_I2C_ADD,buff, 2);
+			buff[0] = CTRL_REG9;
+			buff[1] = CTRL_REG9_VAL;
+			CAccelerometer::m_I2Cbus->write(LSM9DS1_GXL_I2C_ADD,buff, 2);
+
+			//configure interrupt 1
+			buff[0] = INT1_CTRL;
+			buff[1] = INT1_CTRL_VAL;
+			CAccelerometer::m_I2Cbus->write(LSM9DS1_GXL_I2C_ADD,buff, 2);
+
+			//Flush the fifo.
+			CAccelerometer::m_I2Cbus->read(LSM9DS1_GXL_I2C_ADD, OUT_X_L_G, (uint8_t*)m_RawSamples,32*12);
+
+			m_Initialized = true;
+		}
 
 
 	}
@@ -144,44 +205,120 @@ void CAccelGyro_LSM9DS1::setBus (CI2Cbus * bus)
 
 sAccel CAccelGyro_LSM9DS1::getAccel (void)
 {
-	uint8_t buffer[6];
+
 	sAccel ret = {0,0,0};
-	int16_t sx,sy,sz;
-	if (CAccelerometer::m_I2Cbus != NULL)
+
+	//Check if we have any samples available.
+	if (m_NumAccelSamples > 0)
 	{
-		if (6 == CAccelerometer::m_I2Cbus->read(LSM9DS1_GXL_I2C_ADD, OUT_X_L_XL, buffer,6))
-		{
-			sx = ((buffer[1])<< 8) + buffer[0] ;
-			sy = ((buffer[3])<< 8) + buffer[2];
-			sz = (buffer[5]<< 8) + buffer[4];
-			ret.x = -sy;
-			ret.y = sx;
-			ret.z = sz;
-		}
-		//printf ("[LSM9DS1 XL] Acceleration: x= %d | y = %d | z = %d\n", ret.x, ret.y, ret.z);
+		//Lock the buffer
+		m_BufferLock.get();
+		//Retrieve sample from circular buffer & advance read index
+		ret = m_AccelBuffer[m_AccelBufferOutIdx++];
+		m_AccelBufferOutIdx &= SAMPLES_CIRC_BUFFER_SIZE;
+		//Decrement numbers of samples.
+		m_NumAccelSamples--;
+		//Release buffer.
+		m_BufferLock.release();
 	}
+	//printf ("[LSM9DS1 XL] Acceleration: x= %f | y = %f | z = %f\n", ret.x, ret.y, ret.z);
+
 	return ret;
 
 }
 
 sAngularRate CAccelGyro_LSM9DS1::getAngularRate (void)
 {
-	uint8_t buffer[6];
 	sAngularRate ret = {0,0,0};
-	int16_t sx,sy,sz;
-	if (CAccelerometer::m_I2Cbus != NULL)
+
+	//Check if we have any samples available.
+	if (m_NumAngRateSamples > 0)
 	{
-		if (6 == CAccelerometer::m_I2Cbus->read(LSM9DS1_GXL_I2C_ADD, OUT_X_L_G, buffer,6))
-		{
-			sx = ((buffer[1])<< 8) + buffer[0] ;
-			sy = ((buffer[3])<< 8) + buffer[2];
-			sz = (buffer[5]<< 8) + buffer[4];
-			ret.x = -sy;
-			ret.y = sx;
-			ret.z = sz;
-		}
-		//printf ("[LSM9DS1 GYRO] Angular rate: x= %d | y = %d | z = %d\n", ret.x, ret.y, ret.z);
+		//Lock the buffer
+		m_BufferLock.get();
+		//Retrieve sample from circular buffer & advance read index
+		ret = m_AngRateBuffer[m_AngRateBufferOutIdx++];
+		m_AngRateBufferOutIdx &= SAMPLES_CIRC_BUFFER_SIZE;
+		//Decrement numbers of samples.
+		m_NumAngRateSamples--;
+		//Release buffer.
+		m_BufferLock.release();
 	}
+	//printf ("[LSM9DS1 G] Angular rate: x= %f | y = %f | z = %f\n", ret.x, ret.y, ret.z);
+
 	return ret;
 
+
 }
+
+void  CAccelGyro_LSM9DS1::fifoReady (void)
+{
+	uint8_t fifoSrc;
+	uint8_t numSampleInFifo;
+	if (CAccelerometer::m_I2Cbus != NULL)
+	{
+		//Read FIFO_SRC to know the number of samples available in the fifo.
+		if (1 != CAccelerometer::m_I2Cbus->read(LSM9DS1_GXL_I2C_ADD, FIFO_SRC, &fifoSrc,1))
+		{
+			return;
+		}
+		//check for overflow in the fifo.
+		if (fifoSrc & 0x40)
+		{
+			printf ("[LSM9DS1] Warning, overrun detected on fifo\n");
+		}
+
+		numSampleInFifo = fifoSrc & 0x3F;
+
+		//read the fifo. It is possible to read everything with a single read. (LSM9DS1 datasheet ch 3.3 p21)
+		if (12*numSampleInFifo != CAccelerometer::m_I2Cbus->read(LSM9DS1_GXL_I2C_ADD, OUT_X_L_G, (uint8_t*)m_RawSamples,numSampleInFifo*12))
+		{
+			return;
+		}
+
+		//Convert and push everything into the local fifo.
+		m_BufferLock.get();
+		for (int i = 0; i < (numSampleInFifo*6); i+=6)
+		{
+
+			//Convert rotation speed.
+			m_AngRateBuffer[m_AngRateBufferInIdx].x = (float32_t)m_RawSamples[i + 0] * GYRO_FS / 32768 ;
+			m_AngRateBuffer[m_AngRateBufferInIdx].y = (float32_t)m_RawSamples[i + 1] * GYRO_FS / 32768 ;
+			m_AngRateBuffer[m_AngRateBufferInIdx].z = (float32_t)m_RawSamples[i + 2] * GYRO_FS / 32768 ;
+
+			//Advance write index.
+			m_AngRateBufferInIdx++;
+			m_AngRateBufferInIdx &= SAMPLES_CIRC_BUFFER_SIZE;
+
+			//Increase number of samples and check for overflow.
+			m_NumAngRateSamples ++;
+			if (m_NumAngRateSamples > SAMPLES_CIRC_BUFFER_SIZE)
+			{
+				m_NumAngRateSamples = SAMPLES_CIRC_BUFFER_SIZE;
+				m_AngRateBufferOutIdx++;
+				m_AngRateBufferOutIdx &= SAMPLES_CIRC_BUFFER_SIZE;
+			}
+
+			//Convert acceleration.
+			m_AccelBuffer[m_AccelBufferInIdx].x = - (float32_t)m_RawSamples[i + 4] * ACCEL_FS / 32768 ;
+			m_AccelBuffer[m_AccelBufferInIdx].y = (float32_t)m_RawSamples[i + 3] * ACCEL_FS / 32768 ;
+			m_AccelBuffer[m_AccelBufferInIdx].z = (float32_t)m_RawSamples[i + 5] * ACCEL_FS / 32768 ;
+
+			//Advance write index.
+			m_AccelBufferInIdx++;
+			m_AccelBufferInIdx &= SAMPLES_CIRC_BUFFER_SIZE;
+
+			//Increase number of samples and check for overflow.
+			m_NumAccelSamples ++;
+			if (m_NumAccelSamples > SAMPLES_CIRC_BUFFER_SIZE)
+			{
+				m_NumAccelSamples = SAMPLES_CIRC_BUFFER_SIZE;
+				m_AccelBufferOutIdx++;
+				m_AccelBufferOutIdx &= SAMPLES_CIRC_BUFFER_SIZE;
+			}
+
+		}
+		m_BufferLock.release();
+	}
+}
+

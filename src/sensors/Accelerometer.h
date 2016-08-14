@@ -17,9 +17,9 @@
 class CSensorFactory;
 
 typedef struct {
-	int32_t x;
-	int32_t y;
-	int32_t z;
+	float32_t x;
+	float32_t y;
+	float32_t z;
 } sAccel;
 
 class CAccelerometer {
@@ -31,6 +31,8 @@ protected:
 public:
 	virtual void setBus (CI2Cbus * bus) {m_I2Cbus = bus;}
 	virtual sAccel getAccel (void) = 0;
+	virtual bool accelSamplesAvailable (void)= 0;
+
 
 protected:
 	CI2Cbus * m_I2Cbus;

@@ -92,9 +92,9 @@ typedef struct {
 	int32_t range;
 	int32_t meas_left;
 	int32_t meas_right;
-	int32_t accel_x;
-	int32_t accel_y;
-	int32_t rot_z;
+	float32_t accel_x;
+	float32_t accel_y;
+	float32_t rot_z;
 } YapiBotStatus_t;
 
 typedef struct {
