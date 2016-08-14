@@ -24,16 +24,21 @@
 #include "ScriptEngine.h"
 #include "Mapper.h"
 #include "Settings.h"
+#include <pigpiod_if2.h>
 
 #define MAIN_TEXTURE_WIDTH 640
 #define MAIN_TEXTURE_HEIGHT 480
 #define FRAMERATE 30
 
-
+//Temporary until proper GPIO interface.
+int32_t pigpio;
 
 //entry point
 int main(int argc, const char **argv)
 {
+	//Temporary until proper GPIO interface.
+	pigpio = pigpio_start(NULL,NULL); //local gpio
+
 	//Create Settings manager.
 	CSettings::getInstance();
 

@@ -51,7 +51,7 @@ static void GpioCbR (int32_t pi, uint32_t gpio, uint32_t level, uint32_t tick, v
 	motor->EncoderCbRight (gpio, level, tick);
 }
 
-
+extern int32_t pigpio;
 CMotors::CMotors () :
 m_LeftSpeed(0),
 m_RightSpeed(0),
@@ -78,7 +78,8 @@ m_AccErrGain(ACC_ERROR_GAIN)
 	m_AccErrGain = CSettings::getInstance()->getFloat("MOTORS", "Acceleration error gain", ACC_ERROR_GAIN);
 
 #ifdef MOTORS_CONTROL
-	m_Pi = pigpio_start(NULL,NULL); //local gpio
+	//Temporary until proper GPIO interface.
+	m_Pi = pigpio;//pigpio_start(NULL,NULL); //local gpio
 	if (m_Pi < 0)
 	{
 		fprintf(stderr, "[GPIO] Error could not initialize  (pi = %d", m_Pi);

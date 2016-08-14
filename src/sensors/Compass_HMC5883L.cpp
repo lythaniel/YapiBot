@@ -17,6 +17,10 @@
 #define CONF_REG_B 0x01
 #define MODE_REG 0x02
 #define DATA_REG 0x03
+#define STATUS_REG 0x09
+#define ID_REG_A	0x10
+#define ID_REG_B	0x11
+#define ID_REG_C	0x12
 
 #define MODE_MES_CONT 0x00
 #define MODE_MES_SINGLE 0x01
@@ -73,7 +77,7 @@ float32_t CCompass_HMC5883L::getHeading (void)
 	uint8_t address = DATA_REG;
 	uint8_t buffer [6];
 	int16_t sx, sy, sz;
-	float32_t fx,fy,fz;
+	sMagField field;
 	if (m_I2Cbus == NULL)
 	{
 		return 0;
@@ -86,26 +90,27 @@ float32_t CCompass_HMC5883L::getHeading (void)
 			sx = ((buffer[0])<< 8) + buffer[1] ;
 			sy = ((buffer[4])<< 8) + buffer[5];
 			sz = (buffer[2]<< 8) + buffer[3];
-			fx = -sx * ScaleTable[m_Scale];
-			fy = sy * ScaleTable[m_Scale];
-			fz = sz * ScaleTable[m_Scale];
+			field.x = -sx * ScaleTable[m_Scale];
+			field.y = sy * ScaleTable[m_Scale];
+			field.z = sz * ScaleTable[m_Scale];
 
-			m_MaxX = max (m_MaxX,fx);
-			m_MaxY = max (m_MaxY,fy);
-			m_MaxZ = max (m_MaxZ,fz);
+			m_MaxX = max (m_MaxX,field.x);
+			m_MaxY = max (m_MaxY,field.y);
+			m_MaxZ = max (m_MaxZ,field.z);
 
-			m_MinX = min (m_MinX,fx);
-			m_MinY = min (m_MinY,fy);
-			m_MinZ = min (m_MinZ,fz);
+			m_MinX = min (m_MinX,field.x);
+			m_MinY = min (m_MinY,field.y);
+			m_MinZ = min (m_MinZ,field.z);
 
 			m_AvgX = ((m_MaxX - m_MinX)/2)-m_MaxX;
 			m_AvgY = ((m_MaxY - m_MinY)/2)-m_MaxY;
 			m_AvgZ = ((m_MaxZ - m_MinZ)/2)-m_MaxZ;
 
-			fx += m_AvgX;
-			fy += m_AvgY;
+			field.x += m_AvgX;
+			field.y += m_AvgY;
+			field.z += m_AvgZ;
 
-			heading = atan2(fx,fy);
+			heading = atan2(field.x,field.y);
 			if (heading < 0) heading += 2 * PI;
 			if (heading > 2 * PI) heading -= 2 * PI;
 			heading *= RAD_TO_DEG;
@@ -113,8 +118,72 @@ float32_t CCompass_HMC5883L::getHeading (void)
 		}
 
 	}
-	m_I2Cbus->write (HMC5883L_I2C_ADD,&address, 1);
 	//printf ("compass read out: X: %f/%f/%f | : Y: %f/%f/%f,  heading: %f\n",m_MaxX, m_MinX, m_AvgX, m_MaxY, m_MinY, m_AvgY, heading);
 	return heading;
 
 }
+
+bool CCompass_HMC5883L::magFieldAvailable (void)
+{
+	bool ret = false;
+	uint8_t address = STATUS_REG;
+	uint8_t status;
+	if (m_I2Cbus != NULL)
+	{
+		if (1 == m_I2Cbus->write (HMC5883L_I2C_ADD,&address, 1))
+		{
+
+			if (1 == m_I2Cbus->read(HMC5883L_I2C_ADD, &status,1))
+			{
+				ret = status & 0x1;
+			}
+		}
+	}
+	return ret;
+}
+
+sMagField CCompass_HMC5883L::getMagField (void)
+{
+	float32_t heading = 0;
+	uint8_t address = DATA_REG;
+	uint8_t buffer [6];
+	int16_t sx, sy, sz;
+	sMagField field = {0,0,0};
+	if (m_I2Cbus == NULL)
+	{
+		return field;
+	}
+	if (1 == m_I2Cbus->write (HMC5883L_I2C_ADD,&address, 1))
+	{
+
+		if (6 == m_I2Cbus->read(HMC5883L_I2C_ADD, buffer,6))
+		{
+			sx = ((buffer[0])<< 8) + buffer[1] ;
+			sy = ((buffer[4])<< 8) + buffer[5];
+			sz = (buffer[2]<< 8) + buffer[3];
+			field.x = -sx * ScaleTable[m_Scale];
+			field.y = sy * ScaleTable[m_Scale];
+			field.z = sz * ScaleTable[m_Scale];
+
+			m_MaxX = max (m_MaxX,field.x);
+			m_MaxY = max (m_MaxY,field.y);
+			m_MaxZ = max (m_MaxZ,field.z);
+
+			m_MinX = min (m_MinX,field.x);
+			m_MinY = min (m_MinY,field.y);
+			m_MinZ = min (m_MinZ,field.z);
+
+			m_AvgX = ((m_MaxX - m_MinX)/2)-m_MaxX;
+			m_AvgY = ((m_MaxY - m_MinY)/2)-m_MaxY;
+			m_AvgZ = ((m_MaxZ - m_MinZ)/2)-m_MaxZ;
+
+			field.x += m_AvgX;
+			field.y += m_AvgY;
+			field.z += m_AvgZ;
+		}
+	}
+	//printf ("compass read out: X: %f/%f/%f | : Y: %f/%f/%f,  heading: %f\n",m_MaxX, m_MinX, m_AvgX, m_MaxY, m_MinY, m_AvgY, heading);
+	return field;
+
+}
+

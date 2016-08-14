@@ -85,14 +85,14 @@
 #define INT_GEN_DUR_G			0x37
 
 
-#define CTRL_REG1_G_VAL			0x80	//Data rate = 238Hz / FS = 245dps / BW= 00
+#define CTRL_REG1_G_VAL			0x60	//Data rate = 119Hz / FS = 245dps / BW= 00
 #define CTRL_REG2_G_VAL			0x00	//Filtering disabled.
 #define CTRL_REG3_G_VAL			0x00	//Low power disabled, HPF disabled, HP cutoff 0000
 #define ORIENT_CFG_G_VAL		0x00	//Default orientation.
 #define CTRL_REG4_VAL			0x38	//gyro X,Y,Z enabled, latched interrupt disabled, 4D position disabled.
 
 #define CTRL_REG5_XL_VAL		0x38	//No decimation, x,y and z enabled.
-#define CTRL_REG6_XL_VAL		0x80	//data rate 238Hz, full scale 2g, auto bandwidth
+#define CTRL_REG6_XL_VAL		0x60	//data rate 119Hz, full scale 2g, auto bandwidth
 #define CTRL_REG7_XL_VAL		0x00	//High res disabled, filtering disabled.
 #define CTRL_REG8_XL_VAL		0x04	//auto increment address active.
 
@@ -132,6 +132,7 @@ CAccelGyro_LSM9DS1::~CAccelGyro_LSM9DS1()
 	pigpio_stop(m_Pi);
 }
 
+extern int32_t pigpio;
 void CAccelGyro_LSM9DS1::setBus (CI2Cbus * bus)
 {
 	uint8_t buff[5];
@@ -154,7 +155,8 @@ void CAccelGyro_LSM9DS1::setBus (CI2Cbus * bus)
 		//Connect the interrupt handler.
 		if (m_Initialized == false)
 		{
-			m_Pi = pigpio_start(NULL,NULL); //local gpio
+			//Temporary until proper GPIO interface.
+			m_Pi = pigpio;//pigpio_start(NULL,NULL); //local gpio
 			set_mode (m_Pi, INT1_AG_GPIO, PI_INPUT);
 			m_IntCallbackId[0] = callback_ex(m_Pi, INT1_AG_GPIO, RISING_EDGE, lsm9ds1_int1_ag, (void *)this);
 

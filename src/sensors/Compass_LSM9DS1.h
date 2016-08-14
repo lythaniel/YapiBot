@@ -11,6 +11,9 @@
 #define COMPASS_LSM9DS1_H_
 
 #include <Compass.h>
+#include "Mutex.h"
+
+#define LDSM9DS1_MAG_CIRC_BUFFER_SIZE 128 //MUST BE A POWER OF TWO
 
 class CCompass_LSM9DS1: public CCompass
 {
@@ -25,9 +28,14 @@ public:
 	virtual float32_t getHeading (void);
 	virtual void stopCalibration ();
 	virtual void startCalibration ();
+	virtual sMagField getMagField (void);
+	virtual bool magFieldAvailable (void) {return (m_NumSample > 0);}
 
 
+	virtual void dataReady (void);
 private:
+	int32_t m_Pi;
+	int32_t m_IntCallbackId;
 
 	float32_t m_MaxX;
 	float32_t m_MaxY;
@@ -38,6 +46,12 @@ private:
 	int16_t m_CalX;
 	int16_t m_CalY;
 	int16_t m_CalZ;
+
+	int32_t m_NumSample;
+	sMagField m_SampleBuffer [LDSM9DS1_MAG_CIRC_BUFFER_SIZE];
+	int32_t m_BufferInIdx;
+	int32_t m_BufferOutIdx;
+	CMutex m_BufferLock;
 
 
 };

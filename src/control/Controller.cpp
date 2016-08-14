@@ -90,10 +90,15 @@ void CController::run(void *)
 		m_Status.speed_left = motors->getLeftSpeed();
 		m_Status.speed_right = motors->getRightSpeed();
 		m_Status.camera_pos = motors->getCamPos();
-		m_Status.heading = compass->getHeading();
+
 		m_Status.range = rangeFinder->getRange();
 		m_Status.meas_left = motors->getLeftMeas();
 		m_Status.meas_right = motors->getRightMeas();
+
+		while (compass->magFieldAvailable())
+		{
+			m_Status.heading = compass->getHeading();
+		}
 
 		sAccel acc = {0, 0, 0};
 		while (accel->accelSamplesAvailable())

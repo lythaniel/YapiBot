@@ -25,6 +25,9 @@ protected:
 public:
 	virtual void setBus (CI2Cbus * bus);
 	virtual float32_t getHeading (void);
+	virtual sMagField getMagField (void);
+	virtual bool magFieldAvailable (void);
+
 
 private:
 	void writeReg (int8_t regadd, int8_t value);

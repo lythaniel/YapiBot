@@ -13,6 +13,12 @@
 #include <stddef.h>
 #include "I2Cbus.h"
 
+typedef struct {
+	float32_t x;
+	float32_t y;
+	float32_t z;
+} sMagField;
+
 class CSensorFactory;
 
 class CCompass {
@@ -26,6 +32,8 @@ public:
 	virtual float32_t getHeading (void) = 0;
 	virtual void startCalibration () {m_Calib = true;}
 	virtual void stopCalibration () {m_Calib = false;}
+	virtual sMagField getMagField (void) = 0;
+	virtual bool magFieldAvailable (void) = 0;
 
 protected:
 	CI2Cbus * m_I2Cbus;
