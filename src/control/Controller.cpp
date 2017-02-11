@@ -19,6 +19,8 @@
 #include <stdlib.h>
 #include "Settings.h"
 #include "Utils.h"
+#include "Positioning.h"
+#include <cmath>
 
 #define CONTROLLER_PERIOD 200
 
@@ -26,12 +28,13 @@
 #define BEARING_ERR_LIM 6
 #define BEARING_GOOD_CNT_LIMIT 3
 #define BEARING_ERR_CLIP 200
+#define BEARING_MIN_CMD 25
 
 #define MOVE_STRAIGHT_ERR_GAIN 1
 
 #define COLLISION_MIN_DIST 15
 
-#define REFRESH_MAP_SPEED 70
+#define REFRESH_MAP_SPEED 50
 #define REFRESH_MAP_MIN_DIST
 
 CController::CController() :
@@ -74,6 +77,7 @@ CController::~CController() {
 
 }
 
+
 void CController::run(void *)
 {
 	CSampler sampler (CONTROLLER_PERIOD);
@@ -95,24 +99,51 @@ void CController::run(void *)
 		m_Status.meas_left = motors->getLeftMeas();
 		m_Status.meas_right = motors->getRightMeas();
 
-		while (compass->magFieldAvailable())
+		/*while (compass->magFieldAvailable())
 		{
 			m_Status.heading = compass->getHeading();
-		}
+		}*/
 
-		sAccel acc = {0, 0, 0};
-		while (accel->accelSamplesAvailable())
+		sAccel acc = {0.0f, 0.0f, 0.0f};
+		sAngularRate angRate = {0.0f, 0.0f, 0.0f};
+		sMagField field = {0, 0, 0};
+		//printf("start positioning update\n");
+
+		int index =0;
+		int magidx = 0;
+		m_Status.accel_x = 0;
+		m_Status.accel_y = 0;
+
+		while ((accel->accelSamplesAvailable()) && (gyro->angRateSamplesAvailable())&& (compass->magFieldAvailable()))
 		{
 			acc = accel->getAccel();
-		}
-		m_Status.accel_x = acc.x;
-		m_Status.accel_y = acc.y;
+			angRate = gyro->getAngularRate();
+			field = compass->getMagField();
 
-		sAngularRate angRate = {0, 0, 0};
-		while (gyro->angRateSamplesAvailable())
+			CPositioning::getInstance()->update (angRate, acc,field);
+			if (std::fabs(acc.x) > std::fabs(m_Status.accel_x ))
+			{
+				m_Status.accel_x = acc.x;
+			}
+			if (std::fabs(acc.y) > std::fabs(m_Status.accel_y ))
+			{
+				m_Status.accel_y = acc.y;
+			}
+
+		}
+
+		//m_Status.accel_x = acc.x;
+		//m_Status.accel_y = acc.y;
+
+		sOrientation orient = CPositioning::getInstance()->getOrientation();
+
+		m_Status.heading = (orient.yaw <0) ? (360 + orient.yaw) : orient.yaw;
+
+
+		/*while (gyro->angRateSamplesAvailable())
 		{
 			angRate = gyro->getAngularRate();
-		}
+		}*/
 		m_Status.rot_z = angRate.z;
 
 
@@ -174,7 +205,7 @@ void CController::runCompassCalibration (YapiBotStatus_t status)
 			m_ReqLeftMov = 0;
 			m_ReqRightMov = 0;
 			CCompass * compass = CSensorFactory::getInstance()->getCompass();
-			compass->stopCalibration();
+			//compass->stopCalibration();
 		}
 		else
 		{
@@ -455,7 +486,7 @@ void CController::compassCalibration (void)
 
 	CMotors::getInstance()->resetDist();
 	CCompass * compass = CSensorFactory::getInstance()->getCompass();
-	compass->startCalibration();
+	//compass->startCalibration();
 
 	m_State = CTRL_STATE_COMP_CAL;
 
@@ -472,7 +503,7 @@ void CController::moveStraight (int32_t distance)
 		if (m_State == CTRL_STATE_COMP_CAL)
 		{
 			CCompass * compass = CSensorFactory::getInstance()->getCompass();
-			compass->stopCalibration();
+			//compass->stopCalibration();
 		}
 	}
 
@@ -500,7 +531,7 @@ void CController::alignBearing (int32_t bearing)
 		if (m_State == CTRL_STATE_COMP_CAL)
 		{
 			CCompass * compass = CSensorFactory::getInstance()->getCompass();
-			compass->stopCalibration();
+			//compass->stopCalibration();
 		}
 	}
 
@@ -523,7 +554,7 @@ void CController::moveBearing (int32_t bearing, int32_t distance)
 		if (m_State == CTRL_STATE_COMP_CAL)
 		{
 			CCompass * compass = CSensorFactory::getInstance()->getCompass();
-			compass->stopCalibration();
+			//compass->stopCalibration();
 		}
 	}
 
@@ -551,7 +582,7 @@ void CController::rotate (int32_t rot)
 		if (m_State == CTRL_STATE_COMP_CAL)
 		{
 			CCompass * compass = CSensorFactory::getInstance()->getCompass();
-			compass->stopCalibration();
+			//compass->stopCalibration();
 		}
 	}
 
@@ -578,7 +609,7 @@ void CController::refreshMap (void)
 		if (m_State == CTRL_STATE_COMP_CAL)
 		{
 			CCompass * compass = CSensorFactory::getInstance()->getCompass();
-			compass->stopCalibration();
+			//compass->stopCalibration();
 		}
 	}
 
@@ -792,6 +823,17 @@ void CController::processCmdParam (YapiBotCmd_t cmd, int8_t * buffer, uint32_t s
 			CImageProcessing::getInstance()->getParameter(param);
 		}
 		break;
+	case POSITION_PARAM:
+		if (cmd == CmdSetParam)
+		{
+			CPositioning::getInstance()->setParameter(param,&buffer[4],size-4);
+		}
+		else
+		{
+			CPositioning::getInstance()->getParameter(param);
+		}
+		break;
+
 	default:
 		fprintf (stderr, "Unknown parameter !\n");
 		break;

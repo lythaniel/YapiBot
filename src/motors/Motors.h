@@ -78,9 +78,11 @@ private:
 	int32_t m_DistLeft;
 	int32_t m_DistRight;
 
+
 	float32_t m_SpeedConv;
 	float32_t m_SpeedErrGain;
 	float32_t m_AccErrGain;
+	int32_t m_SpeedMinCmd;
 
 
 	CMutex m_Lock;

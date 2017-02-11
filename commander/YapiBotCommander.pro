@@ -20,15 +20,20 @@ SOURCES += main.cpp\
     videowidget.cpp \
     touchpad.cpp \
     VideoProcessing.cpp \
-    map.cpp
+    map.cpp \
+    graphsdiag.cpp \
+    logplot.cpp
 
 HEADERS  += mainwindow.h \
     videowidget.h \
     touchpad.h \
     VideoProcessing.h \
-    map.h
+    map.h \
+    graphsdiag.h \
+    logplot.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    graphs.ui
 
 LIBS +=  -lvlc-qt -lvlc-qt-widgets -lavcodec -lavutil -lswscale #-lopencv_core -lopencv_imgproc
 LIBS += /usr/local/lib/libopencv_core.so

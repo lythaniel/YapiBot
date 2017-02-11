@@ -26,6 +26,7 @@
 #define MOTOR_PARAM 0x1000
 #define CAMERA_PARAM 0x2000
 #define IMGPROC_PARAM 0x3000
+#define POSITION_PARAM 0x4000
 
 #define CMD_TYPE_STATUS 0x80000000
 #define CMD_TYPE_PARAM_ANSWER 0x80010000
@@ -69,15 +70,14 @@ typedef enum {
 	CtrlParamBearingGoodCnt = CONTROL_PARAM | 0x04, 	//define the number of time bearing should below the error lim before the alignment is complete . Integer.
 	MtrParamSpeedConv = MOTOR_PARAM | 0x00,				//define the conversion for speed consign, float
 	MtrParamSpeedErrGain = MOTOR_PARAM | 0x01,			//define the speed error gain, float
-	MtrParamAccErrGain = MOTOR_PARAM | 0x02,			//define the acceleration error gain, float
+	MtrParamAccErrGain = MOTOR_PARAM | 0x02,
+	MtrParamMinSpeedCmd = MOTOR_PARAM | 0x03,//define the acceleration error gain, float
 	CamParamSaturation = CAMERA_PARAM | 0x00,           //define the camera saturation, Integer
 	CamParamContrast = CAMERA_PARAM | 0x01,             //define the camera contrast, Integer
 	CamParamBrightness = CAMERA_PARAM | 0x02,           //define the camera brightness, Integer
 	CamParamsharpness = CAMERA_PARAM | 0x03,            //define the camera sharpness, Integer
 	CamParamIso = CAMERA_PARAM | 0x04,             		//define the camera ISO, Integer
-
-
-
+    PosFltGain = POSITION_PARAM | 0x0,					//define the AHR filter gain, float
 
 } YapiBotParam_t;
 
@@ -95,6 +95,10 @@ typedef struct {
 	float32_t accel_x;
 	float32_t accel_y;
 	float32_t rot_z;
+	float32_t speed_x;
+	float32_t speed_y;
+	float32_t pos_x;
+	float32_t pos_y;
 } YapiBotStatus_t;
 
 typedef struct {

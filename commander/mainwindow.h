@@ -7,6 +7,7 @@
 #include "../src/YapiBotCmd.h"
 #include "VideoProcessing.h"
 #include "videowidget.h"
+#include "graphsdiag.h"
 
 
 namespace Ui {
@@ -69,6 +70,8 @@ private slots:
 
     void on_refreshMap_clicked();
 
+    void on_btnGraphs_clicked();
+
 private:
 
     void sendCommand (YapiBotCmd_t cmd, unsigned char * payload = NULL, unsigned int plsize = 0);
@@ -99,6 +102,8 @@ private:
     bool m_UpdateParam;
     VideoWidget * m_pVideo;
     CVideoProcessing * m_pVideoProc;
+
+    CGraphsDiag * m_pGraphs;
 };
 
 #endif // MAINWINDOW_H

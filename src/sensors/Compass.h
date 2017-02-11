@@ -30,8 +30,8 @@ protected:
 public:
 	virtual void setBus (CI2Cbus * bus) {m_I2Cbus = bus;}
 	virtual float32_t getHeading (void) = 0;
-	virtual void startCalibration () {m_Calib = true;}
-	virtual void stopCalibration () {m_Calib = false;}
+	virtual void startCompassCalibration () {m_Calib = true;}
+	virtual void stopCompassCalibration (sMagField offset, sMagField scale) {m_Calib = false;}
 	virtual sMagField getMagField (void) = 0;
 	virtual bool magFieldAvailable (void) = 0;
 

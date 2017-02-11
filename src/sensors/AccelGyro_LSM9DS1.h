@@ -32,6 +32,12 @@ public:
 	virtual bool accelSamplesAvailable (void) {return (m_NumAccelSamples > 0);}
 	virtual bool angRateSamplesAvailable (void) {return (m_NumAngRateSamples > 0);}
 
+	virtual void startAccelCalibration (void);
+	virtual void startGyroCalibration (void);
+	virtual void stopAccelCalibration (sAccel offset, sAccel scale);
+	virtual void stopGyroCalibration (sAngularRate offset, sAngularRate scale);
+
+
 	void fifoReady (void);
 private:
 	bool m_Initialized;
@@ -48,6 +54,12 @@ private:
 	int32_t m_AccelBufferOutIdx;
 	int32_t m_AngRateBufferOutIdx;
 	CMutex m_BufferLock;
+	sAngularRate m_AverageAngRate;
+	sAngularRate m_GyroCalOffset;
+	sAngularRate m_GyroCalScale;
+	sAccel m_AccelCalOffset;
+	sAccel m_AccelCalScale;
+
 
 };
 

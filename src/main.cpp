@@ -24,6 +24,9 @@
 #include "ScriptEngine.h"
 #include "Mapper.h"
 #include "Settings.h"
+#include "Positioning.h"
+#include "SensorCalibration.h"
+
 #include <pigpiod_if2.h>
 
 #define MAIN_TEXTURE_WIDTH 640
@@ -81,11 +84,16 @@ int main(int argc, const char **argv)
 		gyro->setBus(&i2c);
 	}
 
+	//CSensorCalibration::runCalibration();
+
 	//Create the mapper.
 	CMapper::getInstance();
 
 	//Create the motors
 	CMotors::getInstance();
+
+	//Create the positioning system
+	CPositioning::getInstance();
 
 
 	//Finally create our main controler.

@@ -40,6 +40,8 @@
 
 #define SPEED_MOV_AVG 5
 
+#define SPEED_MIN_CMD 25
+
 static void GpioCbL (int32_t pi, uint32_t gpio, uint32_t level, uint32_t tick, void * user)
 {
 	CMotors * motor = (CMotors *) user;
@@ -70,12 +72,14 @@ m_DistLeft(0),
 m_DistRight(0),
 m_SpeedConv(SPEED_CONV),
 m_SpeedErrGain(SPEED_ERROR_GAIN),
-m_AccErrGain(ACC_ERROR_GAIN)
+m_AccErrGain(ACC_ERROR_GAIN),
+m_SpeedMinCmd(SPEED_MIN_CMD)
 {
 	int32_t ret = 0;
 	m_SpeedConv = CSettings::getInstance()->getFloat("MOTORS", "Speed conversion", SPEED_CONV);
 	m_SpeedErrGain = CSettings::getInstance()->getFloat("MOTORS", "Speed error gain", SPEED_ERROR_GAIN);
 	m_AccErrGain = CSettings::getInstance()->getFloat("MOTORS", "Acceleration error gain", ACC_ERROR_GAIN);
+	m_SpeedMinCmd = CSettings::getInstance()->getInt("MOTORS", "Minimum speed command", SPEED_MIN_CMD);
 
 #ifdef MOTORS_CONTROL
 	//Temporary until proper GPIO interface.
@@ -202,11 +206,19 @@ void CMotors::move (int32_t x, int32_t y)
 		x= 100;
 	else if (x < -100)
 		x = -100;
+	else if ((x > 0)&&(x < m_SpeedMinCmd))
+		x = SPEED_MIN_CMD;
+	else if ((x < 0)&&(x > -m_SpeedMinCmd))
+		x = -SPEED_MIN_CMD;
 
 	if (y > 100)
 		y= 100;
 	else if (y < -100)
 		y = -100;
+	else if ((y > 0)&&(y < m_SpeedMinCmd))
+		y = SPEED_MIN_CMD;
+	else if ((y < 0)&&(y > -m_SpeedMinCmd))
+		y = -SPEED_MIN_CMD;
 
 	int32_t speed_left = x-y;
 	int32_t speed_right = x+y;
@@ -567,6 +579,10 @@ void CMotors::setParameter (YapiBotParam_t param, int8_t * buffer, uint32_t size
 			m_AccErrGain = Utils::toFloat (&buffer[0]);
 			CSettings::getInstance()->setFloat("MOTORS", "Acceleration error gain", m_AccErrGain);
 			break;
+		case MtrParamMinSpeedCmd:
+			m_SpeedMinCmd = Utils::toInt (&buffer[0]);
+			CSettings::getInstance()->setInt("MOTORS", "Minimum speed command", m_SpeedMinCmd);
+			break;
 		default:
 			fprintf (stderr, "Unknown motor parameter !");
 			break;
@@ -589,6 +605,9 @@ void CMotors::getParameter (YapiBotParam_t param)
 			break;
 		case MtrParamAccErrGain:
 			Utils::fromFloat (m_AccErrGain, &answer.val);
+			break;
+		case MtrParamMinSpeedCmd:
+			Utils::fromInt(m_SpeedMinCmd, &answer.val);
 			break;
 
 		default:

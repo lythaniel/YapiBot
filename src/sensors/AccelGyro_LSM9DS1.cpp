@@ -11,6 +11,8 @@
 #include <cstdio>
 #include <pigpiod_if2.h>
 #include <string.h>
+#include <Settings.h>
+#include <math.h>
 
 #define INT1_AG_GPIO			26
 #define INT2_AG_GPIO			19
@@ -93,16 +95,18 @@
 
 #define CTRL_REG5_XL_VAL		0x38	//No decimation, x,y and z enabled.
 #define CTRL_REG6_XL_VAL		0x60	//data rate 119Hz, full scale 2g, auto bandwidth
-#define CTRL_REG7_XL_VAL		0x00	//High res disabled, filtering disabled.
+#define CTRL_REG7_XL_VAL		0x80	//High res enabled, filtering disabled.
 #define CTRL_REG8_XL_VAL		0x04	//auto increment address active.
 
 #define FIFO_CTRL_VAL			0xCF	//FIFO in continuous mode, Threshold = 16;
 #define INT1_CTRL_VAL			0x08	//Int1 enabled on fifo threshold.
 #define CTRL_REG9_VAL			0x02	//Fifo enabled
 
-#define GYRO_FS					245		// 245degree per second (must match value in CTRL_REG1_G_VAL)
-#define ACCEL_FS				2		// 2g (must match value in CTRL_REG6_XL_VAL)
+#define GYRO_FS					245.0f		// 245degree per second (must match value in CTRL_REG1_G_VAL)
+#define ACCEL_FS				2.0f		// 2g (must match value in CTRL_REG6_XL_VAL)
 
+#define TEMP_SENS_GYRO			0.05f
+#define TEMP_SENS_ACCEL			0.0005f
 
 static void lsm9ds1_int1_ag (int32_t pi, uint32_t gpio, uint32_t level, uint32_t tick, void * user)
 {
@@ -120,9 +124,34 @@ m_AngRateBufferInIdx(0),
 m_AccelBufferOutIdx(0),
 m_AngRateBufferOutIdx(0)
 {
+
 	memset (m_RawSamples,0x00,sizeof (m_RawSamples));
 	memset (m_AccelBuffer,0x00,sizeof (m_AccelBuffer));
 	memset (m_AngRateBuffer,0x00,sizeof (m_AngRateBuffer));
+
+	m_AccelCalOffset.x = 0;
+	m_AccelCalOffset.y = 0;
+	m_AccelCalOffset.z = 0;
+	m_AccelCalScale.x = 1.0f;
+	m_AccelCalScale.y = 1.0f;
+	m_AccelCalScale.z = 1.0f;
+
+	m_GyroCalOffset.x = CSettings::getInstance()->getFloat("GYRO LSM9DS1","CalOffsetX",0.0f);
+	m_GyroCalOffset.y = CSettings::getInstance()->getFloat("GYRO LSM9DS1","CalOffsetY",0.0f);
+	m_GyroCalOffset.z = CSettings::getInstance()->getFloat("GYRO LSM9DS1","CalOffsetZ",0.0f);
+
+	m_GyroCalScale.x = CSettings::getInstance()->getFloat("GYRO LSM9DS1","CalScaleX",1.0f);
+	m_GyroCalScale.y = CSettings::getInstance()->getFloat("GYRO LSM9DS1","CalScaleY",1.0f);
+	m_GyroCalScale.z = CSettings::getInstance()->getFloat("GYRO LSM9DS1","CalScaleZ",1.0f);
+
+	m_AccelCalOffset.x = CSettings::getInstance()->getFloat("ACCEL LSM9DS1","CalOffsetX",0.0f);
+	m_AccelCalOffset.y = CSettings::getInstance()->getFloat("ACCEL LSM9DS1","CalOffsetY",0.0f);
+	m_AccelCalOffset.z = CSettings::getInstance()->getFloat("ACCEL LSM9DS1","CalOffsetZ",0.0f);
+
+	m_AccelCalScale.x = CSettings::getInstance()->getFloat("ACCEL LSM9DS1","CalScaleX",1.0f);
+	m_AccelCalScale.y = CSettings::getInstance()->getFloat("ACCEL LSM9DS1","CalScaleY",1.0f);
+	m_AccelCalScale.z = CSettings::getInstance()->getFloat("ACCEL LSM9DS1","CalScaleZ",1.0f);
+
 
 }
 
@@ -208,7 +237,7 @@ void CAccelGyro_LSM9DS1::setBus (CI2Cbus * bus)
 sAccel CAccelGyro_LSM9DS1::getAccel (void)
 {
 
-	sAccel ret = {0,0,0};
+	sAccel ret = {0.0f, 0.0f, 0.0f};
 
 	//Check if we have any samples available.
 	if (m_NumAccelSamples > 0)
@@ -217,13 +246,14 @@ sAccel CAccelGyro_LSM9DS1::getAccel (void)
 		m_BufferLock.get();
 		//Retrieve sample from circular buffer & advance read index
 		ret = m_AccelBuffer[m_AccelBufferOutIdx++];
-		m_AccelBufferOutIdx &= SAMPLES_CIRC_BUFFER_SIZE;
+		m_AccelBufferOutIdx &= (SAMPLES_CIRC_BUFFER_SIZE-1);
 		//Decrement numbers of samples.
 		m_NumAccelSamples--;
 		//Release buffer.
 		m_BufferLock.release();
 	}
-	//printf ("[LSM9DS1 XL] Acceleration: x= %f | y = %f | z = %f\n", ret.x, ret.y, ret.z);
+	//double norm = sqrt(ret.x * ret.x + ret.y * ret.y + ret.z * ret.z);
+	//printf ("[LSM9DS1 XL] Acceleration: norm = %f, x= %f | y = %f | z = %f\n", norm, ret.x, ret.y, ret.z);
 
 	return ret;
 
@@ -231,7 +261,7 @@ sAccel CAccelGyro_LSM9DS1::getAccel (void)
 
 sAngularRate CAccelGyro_LSM9DS1::getAngularRate (void)
 {
-	sAngularRate ret = {0,0,0};
+	sAngularRate ret = {0.0f, 0.0f, 0.0f};
 
 	//Check if we have any samples available.
 	if (m_NumAngRateSamples > 0)
@@ -240,16 +270,74 @@ sAngularRate CAccelGyro_LSM9DS1::getAngularRate (void)
 		m_BufferLock.get();
 		//Retrieve sample from circular buffer & advance read index
 		ret = m_AngRateBuffer[m_AngRateBufferOutIdx++];
-		m_AngRateBufferOutIdx &= SAMPLES_CIRC_BUFFER_SIZE;
+		m_AngRateBufferOutIdx &= (SAMPLES_CIRC_BUFFER_SIZE-1);
 		//Decrement numbers of samples.
 		m_NumAngRateSamples--;
 		//Release buffer.
 		m_BufferLock.release();
 	}
 	//printf ("[LSM9DS1 G] Angular rate: x= %f | y = %f | z = %f\n", ret.x, ret.y, ret.z);
+	//printf ("[LSM9DS1 G] average Angular rate: x= %f | y = %f | z = %f\n", m_AverageAngRate.x, m_AverageAngRate.y, m_AverageAngRate.z);
+
+
 
 	return ret;
 
+
+}
+
+void CAccelGyro_LSM9DS1::startGyroCalibration(void)
+{
+	m_GyroCalOffset.x = 0.0f;
+	m_GyroCalOffset.y = 0.0f;
+	m_GyroCalOffset.z = 0.0f;
+
+	m_GyroCalScale.x = 1.0f;
+	m_GyroCalScale.y = 1.0f;
+	m_GyroCalScale.z = 1.0f;
+}
+
+void CAccelGyro_LSM9DS1::startAccelCalibration(void)
+{
+	m_AccelCalOffset.x = 0.0f;
+	m_AccelCalOffset.y = 0.0f;
+	m_AccelCalOffset.z = 0.0f;
+
+	m_AccelCalScale.x = 1.0f;
+	m_AccelCalScale.y = 1.0f;
+	m_AccelCalScale.z = 1.0f;
+
+}
+
+void CAccelGyro_LSM9DS1::stopGyroCalibration (sAngularRate offset, sAngularRate scale)
+{
+	m_GyroCalOffset = offset;
+	m_GyroCalScale = scale;
+
+	CSettings::getInstance()->setFloat("GYRO LSM9DS1","CalOffsetX",m_GyroCalOffset.x);
+	CSettings::getInstance()->setFloat("GYRO LSM9DS1","CalOffsetY",m_GyroCalOffset.y);
+	CSettings::getInstance()->setFloat("GYRO LSM9DS1","CalOffsetZ",m_GyroCalOffset.z);
+
+	CSettings::getInstance()->setFloat("GYRO LSM9DS1","CalScaleX",m_GyroCalScale.x);
+	CSettings::getInstance()->setFloat("GYRO LSM9DS1","CalScaleY",m_GyroCalScale.y);
+	CSettings::getInstance()->setFloat("GYRO LSM9DS1","CalScaleZ",m_GyroCalScale.z);
+
+}
+
+
+
+void CAccelGyro_LSM9DS1::stopAccelCalibration (sAccel offset, sAccel scale)
+{
+	m_AccelCalOffset = offset;
+	m_AccelCalScale = scale;
+
+	CSettings::getInstance()->setFloat("ACCEL LSM9DS1","CalOffsetX",m_AccelCalOffset.x);
+	CSettings::getInstance()->setFloat("ACCEL LSM9DS1","CalOffsetY",m_AccelCalOffset.y);
+	CSettings::getInstance()->setFloat("ACCEL LSM9DS1","CalOffsetZ",m_AccelCalOffset.z);
+
+	CSettings::getInstance()->setFloat("ACCEL LSM9DS1","CalScaleX",m_AccelCalScale.x);
+	CSettings::getInstance()->setFloat("ACCEL LSM9DS1","CalScaleY",m_AccelCalScale.y);
+	CSettings::getInstance()->setFloat("ACCEL LSM9DS1","CalScaleZ",m_AccelCalScale.z);
 
 }
 
@@ -257,6 +345,10 @@ void  CAccelGyro_LSM9DS1::fifoReady (void)
 {
 	uint8_t fifoSrc;
 	uint8_t numSampleInFifo;
+	int16_t temperature;
+	float32_t tempCorrGyro;
+	float32_t tempCorrAccel;
+
 	if (CAccelerometer::m_I2Cbus != NULL)
 	{
 		//Read FIFO_SRC to know the number of samples available in the fifo.
@@ -271,6 +363,11 @@ void  CAccelGyro_LSM9DS1::fifoReady (void)
 		}
 
 		numSampleInFifo = fifoSrc & 0x3F;
+		if (2 != CAccelerometer::m_I2Cbus->read(LSM9DS1_GXL_I2C_ADD, OUT_TEMP_L, (uint8_t*)&temperature,2))
+		{
+			return;
+		}
+		tempCorrAccel = (float32_t)temperature * TEMP_SENS_ACCEL / 16.0f;
 
 		//read the fifo. It is possible to read everything with a single read. (LSM9DS1 datasheet ch 3.3 p21)
 		if (12*numSampleInFifo != CAccelerometer::m_I2Cbus->read(LSM9DS1_GXL_I2C_ADD, OUT_X_L_G, (uint8_t*)m_RawSamples,numSampleInFifo*12))
@@ -284,13 +381,17 @@ void  CAccelGyro_LSM9DS1::fifoReady (void)
 		{
 
 			//Convert rotation speed.
-			m_AngRateBuffer[m_AngRateBufferInIdx].x = (float32_t)m_RawSamples[i + 0] * GYRO_FS / 32768 ;
-			m_AngRateBuffer[m_AngRateBufferInIdx].y = (float32_t)m_RawSamples[i + 1] * GYRO_FS / 32768 ;
-			m_AngRateBuffer[m_AngRateBufferInIdx].z = (float32_t)m_RawSamples[i + 2] * GYRO_FS / 32768 ;
+			m_AngRateBuffer[m_AngRateBufferInIdx].x =  (((float32_t)m_RawSamples[i + 1] * GYRO_FS / 32768.0f / 180.0f * M_PI * m_GyroCalScale.x)-m_GyroCalOffset.x);
+			m_AngRateBuffer[m_AngRateBufferInIdx].y =  (((float32_t)m_RawSamples[i + 0] * GYRO_FS / 32768.0f / 180.0f * M_PI * m_GyroCalScale.y)-m_GyroCalOffset.y);
+			m_AngRateBuffer[m_AngRateBufferInIdx].z =  (((float32_t)m_RawSamples[i + 2] * GYRO_FS / 32768.0f / 180.0f * M_PI * m_GyroCalScale.z)-m_GyroCalOffset.z);
+
+			//m_AverageAngRate.x = m_AverageAngRate.x * 0.99f + (float32_t)m_RawSamples[i + 0] * 0.01f;
+			//m_AverageAngRate.y = m_AverageAngRate.y * 0.99f + (float32_t)m_RawSamples[i + 1] * 0.01f;
+			//m_AverageAngRate.z = m_AverageAngRate.z * 0.99f + (float32_t)m_RawSamples[i + 2] * 0.01f;
 
 			//Advance write index.
 			m_AngRateBufferInIdx++;
-			m_AngRateBufferInIdx &= SAMPLES_CIRC_BUFFER_SIZE;
+			m_AngRateBufferInIdx &= (SAMPLES_CIRC_BUFFER_SIZE-1);
 
 			//Increase number of samples and check for overflow.
 			m_NumAngRateSamples ++;
@@ -298,17 +399,22 @@ void  CAccelGyro_LSM9DS1::fifoReady (void)
 			{
 				m_NumAngRateSamples = SAMPLES_CIRC_BUFFER_SIZE;
 				m_AngRateBufferOutIdx++;
-				m_AngRateBufferOutIdx &= SAMPLES_CIRC_BUFFER_SIZE;
+				m_AngRateBufferOutIdx &= (SAMPLES_CIRC_BUFFER_SIZE-1);
+				//printf("[LSM9DS1 GYRO] Overflow detected on circular buffer !\n");
 			}
 
 			//Convert acceleration.
-			m_AccelBuffer[m_AccelBufferInIdx].x = - (float32_t)m_RawSamples[i + 4] * ACCEL_FS / 32768 ;
-			m_AccelBuffer[m_AccelBufferInIdx].y = (float32_t)m_RawSamples[i + 3] * ACCEL_FS / 32768 ;
-			m_AccelBuffer[m_AccelBufferInIdx].z = (float32_t)m_RawSamples[i + 5] * ACCEL_FS / 32768 ;
+			m_AccelBuffer[m_AccelBufferInIdx].x =  (((float32_t)m_RawSamples[i + 4] * ACCEL_FS / 32768.0f * m_AccelCalScale.x)-m_AccelCalOffset.x /*+ tempCorrAccel*/);
+			m_AccelBuffer[m_AccelBufferInIdx].y =  (((float32_t)m_RawSamples[i + 3] * ACCEL_FS / 32768.0f * m_AccelCalScale.y)-m_AccelCalOffset.y /*+ tempCorrAccel*/);
+			m_AccelBuffer[m_AccelBufferInIdx].z =  (((float32_t)m_RawSamples[i + 5] * ACCEL_FS / 32768.0f * m_AccelCalScale.z)-m_AccelCalOffset.z /*+ tempCorrAccel*/);
+
+			//double norm = sqrt(m_AccelBuffer[m_AccelBufferInIdx].x * m_AccelBuffer[m_AccelBufferInIdx].x + m_AccelBuffer[m_AccelBufferInIdx].y * m_AccelBuffer[m_AccelBufferInIdx].y + m_AccelBuffer[m_AccelBufferInIdx].z * m_AccelBuffer[m_AccelBufferInIdx].z);
+			//printf ("[LSM9DS1 XL] Acceleration: temp = %d, norm = %f, x= %f | y = %f | z = %f\n", temperature, norm, m_AccelBuffer[m_AccelBufferInIdx].x, m_AccelBuffer[m_AccelBufferInIdx].y, m_AccelBuffer[m_AccelBufferInIdx].z);
+
 
 			//Advance write index.
 			m_AccelBufferInIdx++;
-			m_AccelBufferInIdx &= SAMPLES_CIRC_BUFFER_SIZE;
+			m_AccelBufferInIdx &= (SAMPLES_CIRC_BUFFER_SIZE-1);
 
 			//Increase number of samples and check for overflow.
 			m_NumAccelSamples ++;
@@ -316,7 +422,8 @@ void  CAccelGyro_LSM9DS1::fifoReady (void)
 			{
 				m_NumAccelSamples = SAMPLES_CIRC_BUFFER_SIZE;
 				m_AccelBufferOutIdx++;
-				m_AccelBufferOutIdx &= SAMPLES_CIRC_BUFFER_SIZE;
+				m_AccelBufferOutIdx &= (SAMPLES_CIRC_BUFFER_SIZE-1);
+				//printf("[LSM9DS1 ACCEL] Overflow detected on circular buffer !\n");
 			}
 
 		}

@@ -75,20 +75,29 @@ static void lsm9ds1_int_m (int32_t pi, uint32_t gpio, uint32_t level, uint32_t t
 CCompass_LSM9DS1::CCompass_LSM9DS1() :
 m_Pi(-1),
 m_IntCallbackId(-1),
-m_MaxX(-32769),
-m_MaxY(-32769),
-m_MaxZ(-32769),
-m_MinX(32769),
-m_MinY(32769),
-m_MinZ(32769),
 m_NumSample(0),
 m_BufferInIdx(0),
-m_BufferOutIdx(0)
+m_BufferOutIdx(0),
+m_InputSampCnt(0)
 {
 	memset (m_SampleBuffer, 0x00, sizeof(m_SampleBuffer));
-	m_CalX = CSettings::getInstance()->getInt("COMPASS LSM9DS1","CalX",0);
-	m_CalY = CSettings::getInstance()->getInt("COMPASS LSM9DS1","CalY",0);
-	m_CalZ = CSettings::getInstance()->getInt("COMPASS LSM9DS1","CalZ",0);
+
+	m_CompCalOffset.x = 0.0f;
+		m_CompCalOffset.y = 0.0f;
+		m_CompCalOffset.z = 0.0f;
+
+		m_CompCalScale.x = 1.0f;
+		m_CompCalScale.y = 1.0f;
+		m_CompCalScale.z = 1.0f;
+
+/*	m_CompCalOffset.x = CSettings::getInstance()->getFloat("COMPASS LSM9DS1","CalOffsetX",0.0f);
+	m_CompCalOffset.y = CSettings::getInstance()->getFloat("COMPASS LSM9DS1","CalOffsetY",0.0f);
+	m_CompCalOffset.z = CSettings::getInstance()->getFloat("COMPASS LSM9DS1","CalOffsetZ",0.0f);
+
+	m_CompCalScale.x = CSettings::getInstance()->getFloat("COMPASS LSM9DS1","CalScaleX",1.0f);
+	m_CompCalScale.y = CSettings::getInstance()->getFloat("COMPASS LSM9DS1","CalScaleY",1.0f);
+	m_CompCalScale.z = CSettings::getInstance()->getFloat("COMPASS LSM9DS1","CalScaleZ",1.0f);
+*/
 }
 
 CCompass_LSM9DS1::~CCompass_LSM9DS1() {
@@ -132,6 +141,11 @@ void CCompass_LSM9DS1::setBus (CI2Cbus * bus)
 		buff[5] = CTRL_REG5_M_VAL;
 		m_I2Cbus->write(LSM9DS1_MAG_I2C_ADD,buff, 6);
 
+
+		int16_t m_CalX = 15641;
+		int16_t m_CalY = -750;
+		int16_t m_CalZ = 217;
+
 		//Apply calibration
 		buff[0] = OFFSET_X_REG_L_M,
 		buff[1] = (m_CalX) & 0xFF;
@@ -150,12 +164,12 @@ void CCompass_LSM9DS1::setBus (CI2Cbus * bus)
 	}
 
 }
-void CCompass_LSM9DS1::startCalibration ()
+void CCompass_LSM9DS1::startCompassCalibration ()
 {
 	uint8_t buff[7];
 
 	//Clear offset registers during calibration.
-	memset (buff, 0x00, 7); //Clear buffer.
+	/*memset (buff, 0x00, 7); //Clear buffer.
 	buff[0] = OFFSET_X_REG_L_M;
 
 	if (m_I2Cbus != NULL)
@@ -173,13 +187,22 @@ void CCompass_LSM9DS1::startCalibration ()
 	m_MinY = 32769;
 	m_MinZ = 32769;
 
-	m_Calib = true;
+	m_Calib = true;*/
+
+	m_CompCalOffset.x = 0.0f;
+	m_CompCalOffset.y = 0.0f;
+	m_CompCalOffset.z = 0.0f;
+
+	m_CompCalScale.x = 1.0f;
+	m_CompCalScale.y = 1.0f;
+	m_CompCalScale.z = 1.0f;
+
 
 }
 
-void CCompass_LSM9DS1::stopCalibration ()
+void CCompass_LSM9DS1::stopCompassCalibration (sMagField offset, sMagField scale)
 {
-	m_Calib = false;
+	/*m_Calib = false;
 	uint8_t buff[7];
 
 	float32_t avgX, avgY, avgZ;
@@ -208,7 +231,18 @@ void CCompass_LSM9DS1::stopCalibration ()
 	buff[5] = (m_CalZ) & 0xFF;
 	buff[6] = (m_CalZ >> 8) & 0xFF;
 
-	m_I2Cbus->write(LSM9DS1_MAG_I2C_ADD,buff, 7);
+	m_I2Cbus->write(LSM9DS1_MAG_I2C_ADD,buff, 7);*/
+	m_CompCalOffset = offset;
+	m_CompCalScale = scale;
+
+	CSettings::getInstance()->setFloat("COMPASS LSM9DS1","CalOffsetX",m_CompCalOffset.x);
+	CSettings::getInstance()->setFloat("COMPASS LSM9DS1","CalOffsetY",m_CompCalOffset.y);
+	CSettings::getInstance()->setFloat("COMPASS LSM9DS1","CalOffsetZ",m_CompCalOffset.z);
+
+	CSettings::getInstance()->setFloat("COMPASS LSM9DS1","CalScaleX",m_CompCalScale.x);
+	CSettings::getInstance()->setFloat("COMPASS LSM9DS1","CalScaleY",m_CompCalScale.y);
+	CSettings::getInstance()->setFloat("COMPASS LSM9DS1","CalScaleZ",m_CompCalScale.z);
+
 }
 
 float32_t CCompass_LSM9DS1::getHeading (void)
@@ -222,7 +256,7 @@ float32_t CCompass_LSM9DS1::getHeading (void)
 
 		m_BufferLock.get();
 		field = m_SampleBuffer[m_BufferOutIdx++];
-		m_BufferOutIdx &= LDSM9DS1_MAG_CIRC_BUFFER_SIZE;
+		m_BufferOutIdx &= (LDSM9DS1_MAG_CIRC_BUFFER_SIZE-1);
 		m_NumSample --;
 		if (m_NumSample < 0)
 		{
@@ -235,7 +269,7 @@ float32_t CCompass_LSM9DS1::getHeading (void)
 		if (heading > 2 * PI) heading -= 2 * PI;
 		heading *= RAD_TO_DEG;
 
-		printf ("compass read out: X: %f/%f/%f/%d | Y: %f/%f/%f/%d | Z: %f/%f/%f/%d | heading: %f\n", field.x, m_MaxX, m_MinX, m_CalX, field.y, m_MaxY, m_MinY, m_CalY, field.z, m_MaxZ, m_MinZ, m_CalZ, heading);
+		//printf ("compass read out: X: %f/%f/%f/%d | Y: %f/%f/%f/%d | Z: %f/%f/%f/%d | heading: %f\n", field.x, m_MaxX, m_MinX, m_CalX, field.y, m_MaxY, m_MinY, m_CalY, field.z, m_MaxZ, m_MinZ, m_CalZ, heading);
 
 	}
 
@@ -251,7 +285,7 @@ sMagField CCompass_LSM9DS1::getMagField (void)
 	{
 		m_BufferLock.get();
 		field = m_SampleBuffer[m_BufferOutIdx++];
-		m_BufferOutIdx &= LDSM9DS1_MAG_CIRC_BUFFER_SIZE;
+		m_BufferOutIdx &= (LDSM9DS1_MAG_CIRC_BUFFER_SIZE-1);
 		m_NumSample --;
 		if (m_NumSample < 0)
 		{
@@ -259,7 +293,7 @@ sMagField CCompass_LSM9DS1::getMagField (void)
 			m_NumSample = 0;
 		}
 		m_BufferLock.release();
-		//printf ("compass read out: X: %f/%f/%f/%d | Y: %f/%f/%f/%d | Z: %f/%f/%f/%d | heading: %f | norm: %f\n", fx, m_MaxX, m_MinX, m_CalX, fy, m_MaxY, m_MinY, m_CalY, fz, m_MaxZ, m_MinZ, m_CalZ, heading, norm);
+		//printf ("compass read out: X: %f | Y: %f | Z: %f \n", field.x, field.y, field.z);
 	}
 
 	return field;
@@ -281,29 +315,47 @@ void CCompass_LSM9DS1::dataReady (void)
 		sx = ((buffer[1])<< 8) + buffer[0] ;
 		sy = ((buffer[3])<< 8) + buffer[2];
 		sz = (buffer[5]<< 8) + buffer[4];
-		field.x = sx;
-		field.y = sy;
-		field.z = sz;
 
 
-		m_MaxX = max (m_MaxX,field.x);
-		m_MaxY = max (m_MaxY,field.y);
-		m_MaxZ = max (m_MaxZ,field.z);
+		field.x = (((float32_t) sy / 1500.0f * m_CompCalScale.x)-m_CompCalOffset.x);
+		field.y = (((float32_t)-sx / 1500.0f * m_CompCalScale.y)-m_CompCalOffset.y);
+		field.z = (((float32_t) sz / 1500.0f * m_CompCalScale.z)-m_CompCalOffset.z);
 
-		m_MinX = min (m_MinX,field.x);
-		m_MinY = min (m_MinY,field.y);
-		m_MinZ = min (m_MinZ,field.z);
+		field.x = (((float32_t) sy / 1500.0f) - m_CompCalOffset.x) * m_CompCalScale.x;
+		field.y = (((float32_t)-sx / 1500.0f) - m_CompCalOffset.y) * m_CompCalScale.y;
+		field.z = (((float32_t) sz / 1500.0f) - m_CompCalOffset.z) * m_CompCalScale.z;
+
+		//float32_t norm = sqrtf(field.x * field.x + field.y * field.y + field.z * field.z);
+
+		//printf ("compass read out: norm: %f | X: %f | Y: %f | Z: %f\n",norm, field.x, field.y, field.z);
+
 
 		m_BufferLock.get();
-		m_SampleBuffer[m_BufferInIdx++] = field;
-		m_BufferInIdx &= LDSM9DS1_MAG_CIRC_BUFFER_SIZE;
+		//We need to upsample to 119Hz to match Accelerometer and Gyro sample rate.
+		//We are not going to perform a correct upsampling as the ratio is not easy.
+		//instead we are going to copy the same value 3 times until we reach 117, and
+		//then only 2 times to get 119 values from only 40 input values.
 
-		m_NumSample++;
-		if (m_NumSample > LDSM9DS1_MAG_CIRC_BUFFER_SIZE)
+		uint32_t numCpy = (m_InputSampCnt<39)?3:2;
+
+		for (uint32_t i = 0; i < numCpy; i++)
 		{
-			m_NumSample = LDSM9DS1_MAG_CIRC_BUFFER_SIZE;
-			m_BufferOutIdx++;
-			m_BufferOutIdx &= LDSM9DS1_MAG_CIRC_BUFFER_SIZE;
+			m_SampleBuffer[m_BufferInIdx++] = field;
+			m_BufferInIdx &= (LDSM9DS1_MAG_CIRC_BUFFER_SIZE-1);
+
+			m_NumSample++;
+			if (m_NumSample > LDSM9DS1_MAG_CIRC_BUFFER_SIZE)
+			{
+				m_NumSample = LDSM9DS1_MAG_CIRC_BUFFER_SIZE;
+				m_BufferOutIdx++;
+				m_BufferOutIdx &= (LDSM9DS1_MAG_CIRC_BUFFER_SIZE-1);
+				//printf("[LSM9DS1 MAG] Overflow detected on circular buffer !\n");
+			}
+		}
+		m_InputSampCnt++;
+		if (m_InputSampCnt >= 40)
+		{
+			m_InputSampCnt = 0;
 		}
 		m_BufferLock.release();
 

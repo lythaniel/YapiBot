@@ -101,6 +101,7 @@ add_executable(
 	control/EventObserver.cpp
 	control/Mapper.cpp
 	control/Controller.cpp
+	control/Positioning.cpp
 	motors/Motors.cpp
 	script/ScriptEngine.cpp
 	script/PythonApi.cpp
@@ -110,6 +111,7 @@ add_executable(
 	sensors/AccelGyro_LSM9DS1.cpp
 	sensors/RangeFinder_2Y0A21.cpp
 	sensors/SensorFactory.cpp
+	sensors/SensorCalibration.cpp
 	utils/Sampler.cpp
 	utils/Settings.cpp
 )

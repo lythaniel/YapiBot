@@ -26,8 +26,8 @@ protected:
 public:
 	virtual void setBus (CI2Cbus * bus);
 	virtual float32_t getHeading (void);
-	virtual void stopCalibration ();
-	virtual void startCalibration ();
+	virtual void stopCompassCalibration (sMagField offset, sMagField scale);
+	virtual void startCompassCalibration ();
 	virtual sMagField getMagField (void);
 	virtual bool magFieldAvailable (void) {return (m_NumSample > 0);}
 
@@ -37,7 +37,7 @@ private:
 	int32_t m_Pi;
 	int32_t m_IntCallbackId;
 
-	float32_t m_MaxX;
+	/*float32_t m_MaxX;
 	float32_t m_MaxY;
 	float32_t m_MaxZ;
 	float32_t m_MinX;
@@ -45,13 +45,18 @@ private:
 	float32_t m_MinZ;
 	int16_t m_CalX;
 	int16_t m_CalY;
-	int16_t m_CalZ;
+	int16_t m_CalZ;*/
 
 	int32_t m_NumSample;
 	sMagField m_SampleBuffer [LDSM9DS1_MAG_CIRC_BUFFER_SIZE];
 	int32_t m_BufferInIdx;
 	int32_t m_BufferOutIdx;
 	CMutex m_BufferLock;
+
+	uint32_t m_InputSampCnt;
+
+	sMagField m_CompCalOffset;
+	sMagField m_CompCalScale;
 
 
 };

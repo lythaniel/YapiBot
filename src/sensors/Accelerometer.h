@@ -25,13 +25,17 @@ typedef struct {
 class CAccelerometer {
 		friend class CSensorFactory;
 protected:
-		CAccelerometer() : m_I2Cbus(NULL) {};
+	CAccelerometer() : m_I2Cbus(NULL) {};
 	virtual ~CAccelerometer() {};
 
 public:
 	virtual void setBus (CI2Cbus * bus) {m_I2Cbus = bus;}
 	virtual sAccel getAccel (void) = 0;
 	virtual bool accelSamplesAvailable (void)= 0;
+
+	virtual void startAccelCalibration (void) {}
+	virtual void stopAccelCalibration (sAccel offset, sAccel scale) {}
+
 
 
 protected:

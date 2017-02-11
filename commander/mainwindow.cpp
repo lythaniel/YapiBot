@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "ui_graphs.h"
 #include "videowidget.h"
 #include <QVBoxLayout>
 #include "touchpad.h"
@@ -35,7 +36,7 @@ typedef struct {
 } ParamList_t;
 
 
-#define NUM_PARAM 13
+#define NUM_PARAM 15
 
 const ParamList_t gParamList [NUM_PARAM] =
 {
@@ -47,11 +48,13 @@ const ParamList_t gParamList [NUM_PARAM] =
     {MtrParamSpeedConv, "MtrParamSpeedConv", 'f', 1, 0.1, 10},
     {MtrParamSpeedErrGain, "MtrParamSpeedErrGain", 'f', 1, 0.1, 10},
     {MtrParamAccErrGain, "MtrParamAccErrGain", 'f', 1, 0.1, 10},
+    {MtrParamMinSpeedCmd, "MtrParamMinSpeedCmd", 'i', 0, 0, 100},
     {CamParamSaturation, "CamParamSaturation", 'i', 0, -100, 100},
     {CamParamContrast, "CamParamContrast", 'i', 0, -100, 100},
     {CamParamBrightness, "CamParamBrightness", 'i', 0, -100, 100},
     {CamParamsharpness, "CamParamsharpness", 'i', 0,-100, 100},
     {CamParamIso, "CamParamIso", 'i', 0, 0, MAX_INT},
+    {PosFltGain, "PosFltGain", 'f', 1, 0.1, 20},
 };
 
 
@@ -99,7 +102,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow),
     m_Connected(false),
     m_SizeToCopy(0),
-    m_PayloadIdx(0)
+    m_PayloadIdx(0),
+    m_pGraphs(NULL)
 {
     //QVBoxLayout * layout = new QVBoxLayout();
     //QPalette palette0;
@@ -139,6 +143,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->Compass->setScaleMaxMinor( 5 );
 
     ui->Compass->setNeedle(new QwtCompassMagnetNeedle( QwtCompassMagnetNeedle::ThinStyle ) );
+
 
     QPalette newPalette = ui->Compass->palette();
 
@@ -207,7 +212,7 @@ MainWindow::MainWindow(QWidget *parent) :
     curve->setData(m_AccelData);
     curve->attach( ui->AccelPlot);
 
-
+    m_pGraphs = new CGraphsDiag (this);
 
 
     TryToConnect();
@@ -398,7 +403,10 @@ void MainWindow::processCmd(YapiBotCmd_t cmd, unsigned char * payload, unsigned 
             ui->measRight->setText(QString::number(measRight));
             m_AccelData->setValue(accelX,accelY);
             ui->AccelPlot->replot();
-            ui->AngularRatePlot->setValue(rotZ / 180 * 3.14);
+            ui->AngularRatePlot->setValue(rotZ );
+            m_pGraphs->sltPushAccData(accelX, accelY);
+            m_pGraphs->sltPushSpeedData(measLeft, measRight);
+            m_pGraphs->sltPushGyroData(rotZ);
         }
         else
         {
@@ -640,4 +648,9 @@ void MainWindow::on_paramval_valueChanged(double arg1)
 void MainWindow::on_refreshMap_clicked()
 {
     sendCommand(CmdRefrehMap);
+}
+
+void MainWindow::on_btnGraphs_clicked()
+{
+    m_pGraphs->show();
 }

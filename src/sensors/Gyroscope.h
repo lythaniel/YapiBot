@@ -24,13 +24,16 @@ typedef struct {
 class CGyroscope {
 		friend class CSensorFactory;
 protected:
-		CGyroscope() : m_I2Cbus(NULL) {};
-	virtual ~CGyroscope() {};
+	CGyroscope() : m_I2Cbus(NULL) {};
+	~CGyroscope() {};
 
 public:
 	virtual void setBus (CI2Cbus * bus) {m_I2Cbus = bus;}
 	virtual sAngularRate getAngularRate (void) = 0;
 	virtual bool angRateSamplesAvailable (void) = 0;
+
+	virtual void startGyroCalibration (void) {}
+	virtual void stopGyroCalibration (sAngularRate offset, sAngularRate scale) {}
 
 protected:
 	CI2Cbus * m_I2Cbus;
